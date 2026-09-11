@@ -7,6 +7,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const navLinks = document.querySelectorAll(".nav-link[data-target]");
   const views = document.querySelectorAll(".view[data-view]");
   const topbarTitle = document.getElementById("topbarTitle");
+  const themeButtons = document.querySelectorAll(".theme-toggle");
+
+  const setTheme = (theme) => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("aquactrl-theme", theme);
+    themeButtons.forEach((button) => {
+      const nextTheme = theme === "dark" ? "light" : "dark";
+      button.setAttribute(
+        "aria-label",
+        nextTheme === "light" ? "Aktifkan mode terang" : "Aktifkan mode gelap",
+      );
+      button.setAttribute(
+        "title",
+        nextTheme === "light" ? "Aktifkan mode terang" : "Aktifkan mode gelap",
+      );
+    });
+  };
+
+  const savedTheme = localStorage.getItem("aquactrl-theme");
+  if (savedTheme === "light" || savedTheme === "dark") {
+    setTheme(savedTheme);
+  }
+
+  themeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const currentTheme = document.documentElement.dataset.theme || "dark";
+      setTheme(currentTheme === "dark" ? "light" : "dark");
+    });
+  });
 
   const closeNavigation = () => {
     nav?.classList.remove("is-open");
