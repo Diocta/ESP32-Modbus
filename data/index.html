@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="id" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>AquaCtrl · Monitoring Pompa Air</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-layout="single">
+    <!-- ============ ICON SPRITE (tanpa dependensi luar) ============ -->
+    <svg style="display: none">
+      <symbol
+        id="icon-dashboard"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="3" y="3" width="8" height="8" rx="1.5" />
+        <rect x="13" y="3" width="8" height="5" rx="1.5" />
+        <rect x="13" y="12" width="8" height="9" rx="1.5" />
+        <rect x="3" y="15" width="8" height="6" rx="1.5" />
+      </symbol>
+      <symbol
+        id="icon-mqtt"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M4 14a8 8 0 0 1 16 0" />
+        <path d="M7.5 14a4.5 4.5 0 0 1 9 0" />
+        <circle cx="12" cy="18" r="1.6" fill="currentColor" stroke="none" />
+      </symbol>
+      <symbol
+        id="icon-sliders"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <line x1="4" y1="6" x2="20" y2="6" />
+        <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none" />
+        <line x1="4" y1="12" x2="20" y2="12" />
+        <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none" />
+        <line x1="4" y1="18" x2="20" y2="18" />
+        <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none" />
+      </symbol>
+      <symbol
+        id="icon-wifi"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M2 8.5a16 16 0 0 1 20 0" />
+        <path d="M5.5 12.5a11 11 0 0 1 13 0" />
+        <path d="M9 16.3a6 6 0 0 1 6 0" />
+        <circle cx="12" cy="19.5" r="1.4" fill="currentColor" stroke="none" />
+      </symbol>
+      <symbol
+        id="icon-thermometer"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 14.5V5a2 2 0 0 0-4 0v9.5a4 4 0 1 0 4 0Z" />
+      </symbol>
+      <symbol
+        id="icon-droplet"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M12 3s6.5 7.1 6.5 11.5a6.5 6.5 0 0 1-13 0C5.5 10.1 12 3 12 3Z"
+        />
+      </symbol>
+      <symbol
+        id="icon-power"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 3v8" />
+        <path d="M6.3 6.3a8 8 0 1 0 11.4 0" />
+      </symbol>
+      <symbol
+        id="icon-plus"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </symbol>
+      <symbol
+        id="icon-edit"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      </symbol>
+      <symbol
+        id="icon-trash"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3 6h18" />
+        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      </symbol>
+      <symbol
+        id="icon-check"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <polyline points="20 6 9 17 4 12" />
+      </symbol>
+      <symbol
+        id="icon-x"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      >
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </symbol>
+      <symbol
+        id="icon-sun"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="12" r="4.2" />
+        <path
+          d="M12 2.5v2.3M12 19.2v2.3M4.4 4.4l1.6 1.6M18 18l1.6 1.6M2.5 12h2.3M19.2 12h2.3M4.4 19.6l1.6-1.6M18 6l1.6-1.6"
+        />
+      </symbol>
+      <symbol
+        id="icon-moon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z" />
+      </symbol>
+      <symbol
+        id="icon-menu"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      >
+        <line x1="4" y1="7" x2="20" y2="7" />
+        <line x1="4" y1="12" x2="20" y2="12" />
+        <line x1="4" y1="17" x2="20" y2="17" />
+      </symbol>
+      <symbol
+        id="icon-chevron-left"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <polyline points="15 18 9 12 15 6" />
+      </symbol>
+      <symbol
+        id="icon-chevron-down"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </symbol>
+      <symbol
+        id="icon-lock"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="4.5" y="10.5" width="15" height="10" rx="2" />
+        <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+      </symbol>
+      <symbol
+        id="icon-eye"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" />
+        <circle cx="12" cy="12" r="3" />
+      </symbol>
+      <symbol
+        id="icon-eye-off"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3 3l18 18" />
+        <path
+          d="M10.6 5.2A10.6 10.6 0 0 1 12 5c7 0 10.5 7 10.5 7a13.5 13.5 0 0 1-3.2 4.1M6.6 6.6C3.4 8.6 1.5 12 1.5 12s3.5 7 10.5 7a10 10 0 0 0 4.1-.9"
+        />
+        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      </symbol>
+      <symbol
+        id="icon-shield"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6Z" />
+      </symbol>
+      <symbol
+        id="icon-refresh"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3 12a9 9 0 0 1 15.3-6.4L21 8" />
+        <path d="M21 3v5h-5" />
+        <path d="M21 12a9 9 0 0 1-15.3 6.4L3 16" />
+        <path d="M3 21v-5h5" />
+      </symbol>
+      <symbol
+        id="icon-signal"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        stroke="none"
+      >
+        <rect x="3" y="14" width="3.5" height="7" rx="1" />
+        <rect x="9" y="10" width="3.5" height="11" rx="1" />
+        <rect x="15" y="6" width="3.5" height="15" rx="1" />
+        <rect x="20.5" y="2" width="3" height="19" rx="1" opacity="0.35" />
+      </symbol>
+    </svg>
+
+    <div class="app">
+      <!-- ============ SIDEBAR (desktop) / DRAWER (mobile) ============ -->
+      <aside class="nav" id="nav">
+        <div class="nav-brand">
+          <span class="brand-mark"
+            ><svg width="20" height="20"><use href="#icon-droplet" /></svg
+          ></span>
+          <span class="brand-text">AquaCtrl</span>
+          <button
+            class="icon-btn nav-close"
+            id="navClose"
+            aria-label="Tutup menu"
+          >
+            <svg width="20" height="20"><use href="#icon-x" /></svg>
+          </button>
+        </div>
+        <nav class="nav-links">
+          <a href="#dashboard" class="nav-link" data-target="dashboard">
+            <svg width="19" height="19"><use href="#icon-dashboard" /></svg
+            ><span>Dashboard</span>
+          </a>
+          <a href="#mqtt" class="nav-link" data-target="mqtt">
+            <svg width="19" height="19"><use href="#icon-mqtt" /></svg
+            ><span>Profil MQTT</span>
+          </a>
+          <a href="#modbus" class="nav-link" data-target="modbus">
+            <svg width="19" height="19"><use href="#icon-sliders" /></svg
+            ><span>Modbus &amp; Pin</span>
+          </a>
+          <a href="#wifi" class="nav-link" data-target="wifi">
+            <svg width="19" height="19"><use href="#icon-wifi" /></svg
+            ><span>Konfigurasi WiFi</span>
+          </a>
+        </nav>
+        <div class="nav-footer">
+          <span class="nav-footer-label">ESP32-S3 · Kontrol Pompa Air</span>
+        </div>
+      </aside>
+      <div class="nav-scrim" id="navScrim"></div>
+
+      <!-- ============ MAIN ============ -->
+      <div class="main">
+        <!-- ---- TOP BAR (persistent, selalu terlihat) ---- -->
+        <header class="topbar">
+          <button
+            class="icon-btn hamburger"
+            id="hamburgerBtn"
+            aria-label="Buka menu"
+          >
+            <svg width="22" height="22"><use href="#icon-menu" /></svg>
+          </button>
+
+          <h1 class="topbar-title" id="topbarTitle">Dashboard</h1>
+
+          <div class="topbar-status">
+            <button class="status-chip" id="wifiChip" data-detail="wifi">
+              <span class="status-dot" id="wifiDot"></span>
+              <svg width="15" height="15"><use href="#icon-wifi" /></svg>
+              <span class="status-text" id="wifiText">Not connected</span>
+            </button>
+            <button class="status-chip" id="mqttChip" data-detail="mqtt">
+              <span class="status-dot" id="mqttDot"></span>
+              <svg width="15" height="15"><use href="#icon-mqtt" /></svg>
+              <span class="status-text" id="mqttText">Not connected</span>
+            </button>
+            <button
+              class="icon-btn theme-toggle"
+              id="themeToggle"
+              aria-label="Ganti tema"
+            >
+              <svg width="19" height="19" class="icon-sun">
+                <use href="#icon-sun" />
+              </svg>
+              <svg width="19" height="19" class="icon-moon">
+                <use href="#icon-moon" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- ---- CONTENT ---- -->
+        <div class="content" id="content">
+          <!-- ================= DASHBOARD ================= -->
+          <section class="view is-active" id="dashboard" data-view="dashboard">
+            <div class="view-inner">
+              <div class="readout-grid">
+                <div class="card readout-card">
+                  <div class="readout-icon temp">
+                    <svg width="26" height="26">
+                      <use href="#icon-thermometer" />
+                    </svg>
+                  </div>
+                  <div class="readout-body">
+                    <span class="readout-label">Suhu Air</span>
+                    <span class="readout-value"
+                      ><span id="tempValue">--</span
+                      ><span class="readout-unit">°C</span></span
+                    >
+                    <span class="readout-meta" id="tempMeta"
+                      >Menunggu data sensor…</span
+                    >
+                  </div>
+                </div>
+
+                <div class="card readout-card">
+                  <div class="readout-icon humidity">
+                    <svg width="26" height="26">
+                      <use href="#icon-droplet" />
+                    </svg>
+                  </div>
+                  <div class="readout-body">
+                    <span class="readout-label">Kelembapan</span>
+                    <span class="readout-value"
+                      ><span id="humValue">--</span
+                      ><span class="readout-unit">%</span></span
+                    >
+                    <span class="readout-meta" id="humMeta"
+                      >Menunggu data sensor…</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div class="card pump-card">
+                <div class="pump-info">
+                  <div class="readout-icon pump" id="pumpIcon">
+                    <svg width="26" height="26"><use href="#icon-power" /></svg>
+                  </div>
+                  <div>
+                    <span class="readout-label">Pompa Air</span>
+                    <span class="pump-status" id="pumpStatusText">Mati</span>
+                  </div>
+                </div>
+                <button
+                  class="switch"
+                  id="pumpSwitch"
+                  role="switch"
+                  aria-checked="false"
+                  aria-label="Nyalakan atau matikan pompa"
+                >
+                  <span class="switch-knob"></span>
+                </button>
+              </div>
+
+              <div class="card info-card">
+                <p>
+                  Nilai suhu, kelembapan, dan status pompa di atas masih berupa
+                  <strong>data simulasi</strong> untuk keperluan tampilan.
+                  Setelah backend ESP32 siap, ganti bagian yang ditandai
+                  <code>TODO</code> di <code>script.js</code> dengan pemanggilan
+                  API / WebSocket sebenarnya.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= MQTT PROFILES ================= -->
+          <section class="view" id="mqtt" data-view="mqtt">
+            <div class="view-inner">
+              <div class="section-head">
+                <div>
+                  <h2>Profil MQTT</h2>
+                  <p class="section-sub">
+                    Kelola koneksi ke broker MQTT. Aktifkan salah satu profil
+                    untuk digunakan perangkat.
+                  </p>
+                </div>
+                <button class="btn btn-primary" id="addProfileBtn">
+                  <svg width="17" height="17"><use href="#icon-plus" /></svg>
+                  <span>Tambah profil</span>
+                </button>
+              </div>
+
+              <div class="profile-list" id="profileList">
+                <!-- Diisi oleh script.js -->
+              </div>
+
+              <div class="empty-state" id="profileEmpty" hidden>
+                <svg width="34" height="34"><use href="#icon-mqtt" /></svg>
+                <p>Belum ada profil MQTT.</p>
+                <span
+                  >Tambahkan profil pertama untuk menyambungkan perangkat ke
+                  broker.</span
+                >
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= MODBUS / PIN CONFIG ================= -->
+          <section class="view" id="modbus" data-view="modbus">
+            <div class="view-inner">
+              <div class="section-head">
+                <div>
+                  <h2>Modbus &amp; Konfigurasi Pin</h2>
+                  <p class="section-sub">
+                    Pengaturan alamat Modbus dan pin sensor perangkat.
+                  </p>
+                </div>
+              </div>
+
+              <div class="empty-state empty-state--placeholder">
+                <svg width="34" height="34"><use href="#icon-sliders" /></svg>
+                <p>Halaman ini belum tersedia.</p>
+                <span
+                  >Pengaturan alamat Modbus dan pin sensor akan ditambahkan pada
+                  tahap pengembangan berikutnya.</span
+                >
+              </div>
+            </div>
+          </section>
+
+          <!-- ================= WIFI CONFIG (page-like) ================= -->
+          <section class="view view--page" id="wifi" data-view="wifi">
+            <div class="page-panel">
+              <div class="page-panel-head">
+                <button
+                  class="icon-btn back-btn"
+                  id="wifiBackBtn"
+                  aria-label="Kembali ke dashboard"
+                >
+                  <svg width="20" height="20">
+                    <use href="#icon-chevron-left" />
+                  </svg>
+                </button>
+                <h2>Konfigurasi WiFi</h2>
+              </div>
+
+              <form class="page-panel-body" id="wifiForm">
+                <div class="field">
+                  <label for="wifiSsid">Nama jaringan (SSID)</label>
+                  <div class="input-with-action">
+                    <input
+                      type="text"
+                      id="wifiSsid"
+                      name="ssid"
+                      placeholder="Nama WiFi"
+                      autocomplete="off"
+                      required
+                      list="ssidList"
+                    />
+                    <datalist id="ssidList"></datalist>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      id="scanWifiBtn"
+                      aria-label="Pindai jaringan WiFi"
+                    >
+                      <svg width="17" height="17">
+                        <use href="#icon-refresh" />
+                      </svg>
+                    </button>
+                  </div>
+                  <span class="field-hint" id="scanHint"
+                    >Tekan ikon untuk memindai jaringan di sekitar.</span
+                  >
+                </div>
+
+                <div class="field">
+                  <label for="wifiPass">Kata sandi</label>
+                  <div class="input-with-action">
+                    <svg width="16" height="16" class="input-icon">
+                      <use href="#icon-lock" />
+                    </svg>
+                    <input
+                      type="password"
+                      id="wifiPass"
+                      name="password"
+                      placeholder="Kata sandi WiFi"
+                      autocomplete="off"
+                    />
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      id="toggleWifiPass"
+                      aria-label="Tampilkan kata sandi"
+                    >
+                      <svg width="17" height="17"><use href="#icon-eye" /></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="wifi-current" id="wifiCurrent">
+                  <span class="status-dot" id="wifiCurrentDot"></span>
+                  <span id="wifiCurrentText"
+                    >Belum tersambung ke jaringan manapun</span
+                  >
+                </div>
+
+                <button
+                  type="submit"
+                  class="btn btn-primary btn-block"
+                  id="wifiConnectBtn"
+                >
+                  Sambungkan
+                </button>
+              </form>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ MODAL: TAMBAH / EDIT PROFIL MQTT ============ -->
+    <div class="modal-scrim" id="modalScrim" hidden>
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalTitle"
+      >
+        <div class="modal-head">
+          <h3 id="modalTitle">Tambah profil MQTT</h3>
+          <button class="icon-btn" id="modalCloseBtn" aria-label="Tutup">
+            <svg width="19" height="19"><use href="#icon-x" /></svg>
+          </button>
+        </div>
+
+        <form class="modal-body" id="profileForm">
+          <div class="field">
+            <label for="profName">Nama profil</label>
+            <input
+              type="text"
+              id="profName"
+              placeholder="Contoh: Broker HiveMQ"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label for="profBroker">Alamat broker</label>
+            <input
+              type="text"
+              id="profBroker"
+              placeholder="Contoh: broker.hivemq.com"
+              required
+            />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="profPort">Port</label>
+              <input type="number" id="profPort" placeholder="1883" required />
+            </div>
+            <label class="checkbox-field" for="profTls">
+              <input type="checkbox" id="profTls" />
+              <span class="checkbox-box"
+                ><svg width="13" height="13"><use href="#icon-check" /></svg
+              ></span>
+              <span class="checkbox-text"
+                ><svg width="14" height="14"><use href="#icon-shield" /></svg
+                >Gunakan TLS/SSL</span
+              >
+            </label>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="profUser"
+                >Username <span class="optional">(opsional)</span></label
+              >
+              <input
+                type="text"
+                id="profUser"
+                placeholder="Username"
+                autocomplete="off"
+              />
+            </div>
+            <div class="field">
+              <label for="profPass"
+                >Password <span class="optional">(opsional)</span></label
+              >
+              <input
+                type="password"
+                id="profPass"
+                placeholder="Password"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="profTopic"
+              >Topik <span class="optional">(opsional)</span></label
+            >
+            <input
+              type="text"
+              id="profTopic"
+              placeholder="Contoh: rumah/pompa/status"
+            />
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" id="modalCancelBtn">
+              Batal
+            </button>
+            <button type="submit" class="btn btn-primary" id="modalSubmitBtn">
+              Tambah profil
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ TOAST ============ -->
+    <div class="toast" id="toast"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
