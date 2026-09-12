@@ -8,6 +8,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const views = document.querySelectorAll(".view[data-view]");
   const topbarTitle = document.getElementById("topbarTitle");
   const themeButtons = document.querySelectorAll(".theme-toggle");
+  const wifiChip = document.getElementById("wifiChip");
+  const wifiDot = document.getElementById("wifiDot");
+  const wifiText = document.getElementById("wifiText");
+  const wifiForm = document.getElementById("wifiForm");
+  const wifiSsid = document.getElementById("wifiSsid");
+  const wifiPass = document.getElementById("wifiPass");
+  const wifiCurrentText = document.getElementById("wifiCurrentText");
+  const wifiCurrentDot = document.getElementById("wifiCurrentDot");
+  const scanWifiButton = document.getElementById("scanWifiBtn");
+  const scanHint = document.getElementById("scanHint");
+  const wifiConnectButton = document.getElementById("wifiConnectBtn");
+  const wifiConnectedPanel = document.getElementById("wifiConnectedPanel");
+  const connectedWifiName = document.getElementById("connectedWifiName");
+  const connectedWifiIp = document.getElementById("connectedWifiIp");
+  const changeWifiButton = document.getElementById("changeWifiBtn");
+  const wifiConfigHint = document.getElementById("wifiConfigHint");
+  const toggleWifiPassButton = document.getElementById("toggleWifiPass");
+  let configurationOnly = false;
 
   const setTheme = (theme) => {
     document.documentElement.dataset.theme = theme;
@@ -44,6 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const showView = (target) => {
+    if (configurationOnly && target !== "wifi") target = "wifi";
     const view =
       document.querySelector(`.view[data-view="${target}"]`) ||
       document.querySelector('.view[data-view="dashboard"]');
@@ -90,7 +109,141 @@ document.addEventListener("DOMContentLoaded", () => {
     showView(location.hash.slice(1) || "dashboard"),
   );
 
-  showView(location.hash.slice(1) || "dashboard");
+  const updateWifiStatus = (isConnected, ssid = "") => {
+    if (isConnected) {
+      wifiChip.classList.add("is-on");
+      wifiDot.classList.add("is-on");
+      wifiText.textContent = ssid || "Tersambung";
+      wifiText.title = ssid || "Tersambung";
+      if (wifiCurrentText)
+        wifiCurrentText.textContent = `Tersambung ke ${ssid || "jaringan WiFi"}`;
+      wifiCurrentDot?.classList.add("is-on");
+    } else {
+      wifiChip.classList.remove("is-on");
+      wifiDot.classList.remove("is-on");
+      wifiText.textContent = "Not connected";
+      wifiText.title = "Belum tersambung";
+      if (wifiCurrentText)
+        wifiCurrentText.textContent = "Belum tersambung ke jaringan manapun";
+      wifiCurrentDot?.classList.remove("is-on");
+    }
+  };
+
+  const refreshWifiStatus = async () => {
+    try {
+      const response = await fetch("/api/status", { cache: "no-store" });
+      if (!response.ok) throw new Error("Status WiFi tidak tersedia");
+      const status = await response.json();
+      configurationOnly = Boolean(status.configMode);
+      updateWifiStatus(status.connected, status.connected ? status.ssid : "");
+      if (wifiConnectedPanel) wifiConnectedPanel.hidden = configurationOnly;
+      if (wifiForm) wifiForm.hidden = !configurationOnly;
+      if (wifiConfigHint) wifiConfigHint.hidden = !configurationOnly;
+      if (connectedWifiName)
+        connectedWifiName.textContent = status.ssid || "Belum tersambung";
+      if (connectedWifiIp)
+        connectedWifiIp.textContent = `IP: ${status.ip || "-"}`;
+      if (configurationOnly) {
+        navLinks.forEach((link) => {
+          link.hidden = link.dataset.target !== "wifi";
+        });
+        showView("wifi");
+        if (wifiCurrentText)
+          wifiCurrentText.textContent =
+            "Terhubung ke ESP32-S3. Pilih WiFi tujuan di bawah.";
+      }
+    } catch {
+      configurationOnly = false;
+      if (wifiConnectedPanel) wifiConnectedPanel.hidden = false;
+      if (wifiForm) wifiForm.hidden = true;
+      if (wifiConfigHint) wifiConfigHint.hidden = true;
+      updateWifiStatus(false);
+    }
+  };
+
+  toggleWifiPassButton?.addEventListener("click", () => {
+    if (!wifiPass) return;
+    const isPassword = wifiPass.type === "password";
+    wifiPass.type = isPassword ? "text" : "password";
+    toggleWifiPassButton.setAttribute(
+      "aria-label",
+      isPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi",
+    );
+    const icon = toggleWifiPassButton.querySelector("use");
+    icon?.setAttribute("href", isPassword ? "#icon-eye-off" : "#icon-eye");
+  });
+
+  changeWifiButton?.addEventListener("click", async () => {
+    changeWifiButton.disabled = true;
+    if (wifiConfigHint) {
+      wifiConfigHint.hidden = false;
+      wifiConfigHint.textContent =
+        "ESP32 sedang restart ke mode konfigurasi. Tunggu WiFi ESP32-S3 muncul, lalu sambungkan perangkat ke sana.";
+    }
+    try {
+      await fetch("/api/wifi/configure", { method: "POST" });
+    } catch {
+      // Koneksi terputus adalah normal karena ESP32 sedang restart.
+    }
+  });
+
+  scanWifiButton?.addEventListener("click", async () => {
+    if (scanHint) scanHint.textContent = "Memindai jaringan di sekitar...";
+    scanWifiButton.disabled = true;
+    try {
+      const response = await fetch("/api/wifi/scan", { cache: "no-store" });
+      const networks = await response.json();
+      const list = document.getElementById("ssidList");
+      if (list) {
+        list.replaceChildren(
+          ...networks
+            .filter((network) => network.ssid)
+            .map((network) => {
+              const option = document.createElement("option");
+              option.value = network.ssid;
+              return option;
+            }),
+        );
+      }
+      if (scanHint)
+        scanHint.textContent = `${networks.length} jaringan ditemukan.`;
+    } catch {
+      if (scanHint)
+        scanHint.textContent =
+          "Gagal memindai jaringan. Isi SSID secara manual.";
+    } finally {
+      scanWifiButton.disabled = false;
+    }
+  });
+
+  wifiForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!wifiSsid?.value.trim()) return;
+    wifiConnectButton.disabled = true;
+    if (wifiCurrentText)
+      wifiCurrentText.textContent = "Menguji koneksi WiFi...";
+    try {
+      const response = await fetch("/api/wifi/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          ssid: wifiSsid.value.trim(),
+          password: wifiPass?.value || "",
+        }),
+      });
+      const result = await response.json();
+      if (!result.ok) throw new Error(result.error || "Koneksi gagal");
+      if (wifiCurrentText)
+        wifiCurrentText.textContent = "Berhasil. ESP32 sedang restart...";
+      setTimeout(() => window.location.reload(), 3000);
+    } catch (error) {
+      if (wifiCurrentText)
+        wifiCurrentText.textContent = error.message || "Koneksi WiFi gagal.";
+      wifiConnectButton.disabled = false;
+    }
+  });
+
+  refreshWifiStatus();
 
   const modalScrim = document.getElementById("modalScrim");
   const addProfileButton = document.getElementById("addProfileBtn");

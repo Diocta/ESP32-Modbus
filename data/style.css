@@ -673,6 +673,37 @@ body[data-layout="single"] .view.is-active {
   font-size: 1.2rem;
   font-weight: 650;
 }
+.wifi-connected-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.wifi-connected-panel strong,
+.wifi-ip {
+  display: block;
+}
+.wifi-connected-panel strong {
+  margin-top: 0.15rem;
+}
+.wifi-ip,
+.wifi-config-hint {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+.wifi-config-hint {
+  margin: -0.35rem 0 0;
+  line-height: 1.5;
+}
+.wifi-config-hint code {
+  background: var(--surface-hover);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
 .back-btn {
   display: none;
 }
@@ -681,6 +712,11 @@ body[data-layout="single"] .view.is-active {
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
+}
+#wifiForm[hidden],
+#wifiConnectedPanel[hidden],
+#wifiConfigHint[hidden] {
+  display: none;
 }
 
 .field {
@@ -973,6 +1009,10 @@ input:focus {
   }
   .status-text {
     display: none;
+  }
+  .topbar-status .status-chip:first-child .status-text {
+    display: block;
+    max-width: 86px;
   }
   .status-chip {
     padding: 0.45rem;

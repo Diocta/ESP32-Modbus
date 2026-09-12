@@ -527,7 +527,24 @@
                 <h2>Konfigurasi WiFi</h2>
               </div>
 
-              <form class="page-panel-body" id="wifiForm">
+              <div class="wifi-connected-panel" id="wifiConnectedPanel" hidden>
+                <div>
+                  <span class="readout-label">WiFi tersambung</span>
+                  <strong id="connectedWifiName">-</strong>
+                  <span class="wifi-ip" id="connectedWifiIp">IP: -</span>
+                </div>
+                <button type="button" class="btn btn-ghost" id="changeWifiBtn">
+                  Ganti WiFi
+                </button>
+              </div>
+
+              <p class="wifi-config-hint" id="wifiConfigHint" hidden>
+                ESP32 akan restart dan membuat WiFi <strong>ESP32-S3</strong>.
+                Sambungkan perangkat ke WiFi tersebut. Jika halaman tidak
+                terbuka otomatis, buka <code>http://192.168.4.1</code>.
+              </p>
+
+              <form class="page-panel-body" id="wifiForm" hidden>
                 <div class="field">
                   <label for="wifiSsid">Nama jaringan (SSID)</label>
                   <div class="input-with-action">

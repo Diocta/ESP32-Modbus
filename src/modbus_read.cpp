@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ModbusMaster.h>
+#include "wifi_config.h"
 
 // Pin RS485 Onboard Waveshare ESP32-S3 Relay 6CH
 #define RX_PIN 18
@@ -12,6 +13,9 @@ ModbusMaster node;
 void setup() {
   Serial.begin(115200);
   delay(2000); // Waktu inisialisasi power sensor Autonics (min 2 detik)
+
+  // INISIALISASI WIFI SETELAH SERIAL AGAR LOG WIFI TERLIHAT
+  wifi_init();
 
   // Auto-wakeup USB CDC Waveshare ESP32-S3
   for (int i = 0; i < 20; i++) {
@@ -29,6 +33,13 @@ void setup() {
 }
 
 void loop() {
+  wifi_handle_client();
+
+  // Pastikan WiFi tetap connected
+  if (WiFi.status() != WL_CONNECTED) {
+    wifi_init();
+  }
+
   // Read 2 Input Registers dari Address 0x0000 (300001 = Suhu, 300002 = Kelembapan)
   uint8_t result = node.readInputRegisters(0x0000, 2);
 
