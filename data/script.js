@@ -25,6 +25,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const changeWifiButton = document.getElementById("changeWifiBtn");
   const wifiConfigHint = document.getElementById("wifiConfigHint");
   const toggleWifiPassButton = document.getElementById("toggleWifiPass");
+  const tempValue = document.getElementById("tempValue");
+  const humValue = document.getElementById("humValue");
+  const tempMeta = document.getElementById("tempMeta");
+  const humMeta = document.getElementById("humMeta");
+  const pumpSwitch = document.getElementById("pumpSwitch");
+  const pumpStatusText = document.getElementById("pumpStatusText");
+  const pumpIcon = document.getElementById("pumpIcon");
   let configurationOnly = false;
 
   const setTheme = (theme) => {
@@ -134,6 +141,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/api/status", { cache: "no-store" });
       if (!response.ok) throw new Error("Status WiFi tidak tersedia");
       const status = await response.json();
+      if (tempValue) tempValue.textContent = status.temperature ?? "--";
+      if (humValue) humValue.textContent = status.humidity ?? "--";
+      if (tempMeta)
+        tempMeta.textContent = status.sensorValid
+          ? "Data sensor"
+          : "Menunggu data sensor...";
+      if (humMeta)
+        humMeta.textContent = status.sensorValid
+          ? "Data sensor"
+          : "Menunggu data sensor...";
+      if (pumpSwitch && typeof status.pump === "boolean") {
+        pumpSwitch.setAttribute("aria-checked", String(status.pump));
+        pumpStatusText.textContent = status.pump ? "Nyala" : "Mati";
+        pumpIcon.classList.toggle("is-off", !status.pump);
+      }
       configurationOnly = Boolean(status.configMode);
       updateWifiStatus(status.connected, status.connected ? status.ssid : "");
       if (wifiConnectedPanel) wifiConnectedPanel.hidden = configurationOnly;
@@ -160,6 +182,27 @@ document.addEventListener("DOMContentLoaded", () => {
       updateWifiStatus(false);
     }
   };
+
+  pumpSwitch?.addEventListener("click", async () => {
+    const enabled = pumpSwitch.getAttribute("aria-checked") !== "true";
+    pumpSwitch.disabled = true;
+    try {
+      const response = await fetch("/api/pump", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ state: enabled ? "on" : "off" }),
+      });
+      const result = await response.json();
+      if (!result.ok) throw new Error(result.error || "Kontrol pompa gagal");
+      pumpSwitch.setAttribute("aria-checked", String(result.pump));
+      pumpStatusText.textContent = result.pump ? "Nyala" : "Mati";
+      pumpIcon?.classList.toggle("is-off", !result.pump);
+    } catch {
+      refreshWifiStatus();
+    } finally {
+      pumpSwitch.disabled = false;
+    }
+  });
 
   toggleWifiPassButton?.addEventListener("click", () => {
     if (!wifiPass) return;
@@ -244,6 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   refreshWifiStatus();
+  setInterval(refreshWifiStatus, 5000);
 
   const modalScrim = document.getElementById("modalScrim");
   const addProfileButton = document.getElementById("addProfileBtn");

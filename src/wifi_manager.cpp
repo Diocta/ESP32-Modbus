@@ -1,4 +1,6 @@
 #include "wifi_config.h"
+#include "relay_controller.h"
+#include "sensor_reader.h"
 #include <DNSServer.h>
 #include <LittleFS.h>
 #include <Preferences.h>
@@ -44,13 +46,34 @@ void sendIndex() {
 
 void sendStatus() {
   const bool connected = WiFi.status() == WL_CONNECTED;
+  const SensorReading sensor = sensor_reading();
   String json = "{\"connected\":" + String(connected ? "true" : "false") +
                 ",\"configMode\":" +
                 String(configPortalActive ? "true" : "false") +
                 ",\"ssid\":\"" +
                 (connected ? WiFi.SSID() : String(kConfigSsid)) +
-                "\",\"ip\":\"" + WiFi.localIP().toString() + "\"}";
+                "\",\"ip\":\"" + WiFi.localIP().toString() +
+                "\",\"temperature\":" +
+                (sensor.valid ? String(sensor.temperature, 2) : "null") +
+                ",\"humidity\":" +
+                (sensor.valid ? String(sensor.humidity, 2) : "null") +
+                ",\"sensorValid\":" +
+                String(sensor.valid ? "true" : "false") +
+                ",\"pump\":" +
+                String(relay_is_enabled() ? "true" : "false") + "}";
   webServer.send(200, "application/json", json);
+}
+
+void setPump() {
+  const String state = webServer.arg("state");
+  if (state != "on" && state != "off") {
+    webServer.send(400, "application/json", "{\"ok\":false,\"error\":\"state harus on atau off\"}");
+    return;
+  }
+  const bool enabled = relay_set(state == "on");
+  webServer.send(200, "application/json",
+                 String("{\"ok\":true,\"pump\":") +
+                     (enabled ? "true}" : "false}"));
 }
 
 void sendScan() {
@@ -125,6 +148,7 @@ void registerRoutes() {
   webServer.on("/style.css", HTTP_GET, []() { serveFile("/style.css"); });
   webServer.on("/script.js", HTTP_GET, []() { serveFile("/script.js"); });
   webServer.on("/api/status", HTTP_GET, sendStatus);
+  webServer.on("/api/pump", HTTP_POST, setPump);
   webServer.on("/api/wifi/scan", HTTP_GET, sendScan);
   webServer.on("/api/wifi/connect", HTTP_POST, connectToNewWifi);
   webServer.on("/api/wifi/configure", HTTP_POST, requestConfigMode);
