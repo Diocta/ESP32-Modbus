@@ -6,6 +6,7 @@
 
 namespace {
 constexpr char kConfigSsid[] = "ESP32-S3";
+constexpr char kConfigPassword[] = "esp32pompa";
 constexpr char kMdnsName[] = "aqua";
 constexpr char kConfigRequestKey[] = "cfg_req";
 constexpr byte kDnsPort = 53;
@@ -13,7 +14,9 @@ constexpr byte kDnsPort = 53;
 WebServer webServer(80);
 DNSServer dnsServer;
 bool configPortalActive = false;
+bool accessPointActive = false;
 bool webServerStarted = false;
+unsigned long lastWifiLog = 0;
 char saved_ssid[33] = "";
 char saved_password[65] = "";
 
@@ -144,20 +147,25 @@ void startWebServer() {
   webServerStarted = true;
 }
 
-void startConfigPortal() {
-  configPortalActive = true;
-  WiFi.disconnect(true, false);
+void startAccessPoint(bool disconnectStation) {
+  if (disconnectStation) WiFi.disconnect(true, false);
   WiFi.mode(WIFI_AP_STA);
   WiFi.setHostname(kMdnsName);
-  bool apStarted = WiFi.softAP(kConfigSsid);
+  bool apStarted = WiFi.softAP(kConfigSsid, kConfigPassword);
   if (!apStarted) {
     delay(100);
-    apStarted = WiFi.softAP(kConfigSsid);
+    apStarted = WiFi.softAP(kConfigSsid, kConfigPassword);
   }
+  accessPointActive = apStarted;
   Serial.printf("[WiFi] AP %s: %s\n", kConfigSsid, apStarted ? "aktif" : "gagal");
   Serial.printf("[WiFi] IP konfigurasi: %s\n", WiFi.softAPIP().toString().c_str());
   dnsServer.start(kDnsPort, "*", WiFi.softAPIP());
   startWebServer();
+}
+
+void startConfigPortal() {
+  configPortalActive = true;
+  startAccessPoint(true);
 }
 }  // namespace
 
@@ -198,6 +206,7 @@ void wifi_init(void) {
     Serial.printf("[WiFi] Terhubung ke %s\n", WiFi.SSID().c_str());
     Serial.printf("[WiFi] IP: %s\n", WiFi.localIP().toString().c_str());
     MDNS.begin(kMdnsName);
+    startAccessPoint(false);
     startWebServer();
     return;
   }
@@ -206,8 +215,20 @@ void wifi_init(void) {
 }
 
 void wifi_handle_client(void) {
-  if (configPortalActive) dnsServer.processNextRequest();
+  if (accessPointActive) dnsServer.processNextRequest();
   if (webServerStarted) webServer.handleClient();
+  if (millis() - lastWifiLog >= 10000) {
+    lastWifiLog = millis();
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.printf("[WiFi] Terhubung ke %s | IP: %s | Dashboard: http://aqua.local\n",
+                    WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+    } else if (accessPointActive) {
+      Serial.printf("[WiFi] Mode konfigurasi | AP: %s | Buka: http://192.168.4.1\n",
+                    kConfigSsid);
+    } else {
+      Serial.println("[WiFi] Belum terhubung");
+    }
+  }
 }
 
 void wifi_set_mode(uint8_t mode) {
