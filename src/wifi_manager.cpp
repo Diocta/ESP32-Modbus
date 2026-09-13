@@ -1,6 +1,7 @@
 #include "wifi_config.h"
 #include "relay_controller.h"
 #include "sensor_reader.h"
+#include "mqtt_manager.h"
 #include <DNSServer.h>
 #include <LittleFS.h>
 #include <Preferences.h>
@@ -38,6 +39,13 @@ bool serveFile(const String& path) {
   return true;
 }
 
+String jsonEscape(const String& value) {
+  String escaped = value;
+  escaped.replace("\\", "\\\\");
+  escaped.replace("\"", "\\\"");
+  return escaped;
+}
+
 void sendIndex() {
   if (!serveFile("/index.html")) {
     webServer.send(500, "text/plain", "index.html tidak tersedia");
@@ -60,7 +68,11 @@ void sendStatus() {
                 ",\"sensorValid\":" +
                 String(sensor.valid ? "true" : "false") +
                 ",\"pump\":" +
-                String(relay_is_enabled() ? "true" : "false") + "}";
+                String(relay_is_enabled() ? "true" : "false") +
+                ",\"mqttConnected\":" +
+                String(mqtt_is_connected() ? "true" : "false") +
+                ",\"mqttProfile\":\"" + jsonEscape(mqtt_active_profile_name()) +
+                  "\",\"mqttError\":\"" + jsonEscape(mqtt_last_error()) + "\"}";
   webServer.send(200, "application/json", json);
 }
 
@@ -74,6 +86,45 @@ void setPump() {
   webServer.send(200, "application/json",
                  String("{\"ok\":true,\"pump\":") +
                      (enabled ? "true}" : "false}"));
+}
+
+void sendMqttProfiles() {
+  webServer.send(200, "application/json", mqtt_profiles_json());
+}
+
+void saveMqttProfile() {
+  int index = webServer.arg("id").toInt();
+  if (index < 0) index = mqtt_free_profile_index();
+  MqttProfile profile;
+  profile.name = webServer.arg("name");
+  profile.broker = webServer.arg("broker");
+  profile.port = webServer.arg("port").toInt();
+  profile.tls = webServer.arg("tls") == "true";
+  profile.username = webServer.arg("username");
+  profile.password = webServer.arg("password");
+  if (index < 0 || index >= kMaxMqttProfiles || profile.name.isEmpty() ||
+      profile.broker.isEmpty() || profile.port == 0 ||
+      !mqtt_save_profile(index, profile)) {
+    webServer.send(400, "application/json", "{\"ok\":false,\"error\":\"Data profil tidak valid\"}");
+    return;
+  }
+  webServer.send(200, "application/json", "{\"ok\":true}");
+}
+
+void activateMqttProfile() {
+  const int index = webServer.arg("id").toInt();
+  if (index < 0 || index >= kMaxMqttProfiles || !mqtt_activate_profile(index)) {
+    webServer.send(200, "application/json",
+                   String("{\"ok\":false,\"error\":\"") + jsonEscape(mqtt_last_error()) + "\"}");
+    return;
+  }
+  webServer.send(200, "application/json", "{\"ok\":true}");
+}
+
+void deleteMqttProfile() {
+  const int index = webServer.arg("id").toInt();
+  const bool deleted = index >= 0 && index < kMaxMqttProfiles && mqtt_delete_profile(index);
+  webServer.send(200, "application/json", String("{\"ok\":") + (deleted ? "true}" : "false}"));
 }
 
 void sendScan() {
@@ -149,6 +200,10 @@ void registerRoutes() {
   webServer.on("/script.js", HTTP_GET, []() { serveFile("/script.js"); });
   webServer.on("/api/status", HTTP_GET, sendStatus);
   webServer.on("/api/pump", HTTP_POST, setPump);
+  webServer.on("/api/mqtt/profiles", HTTP_GET, sendMqttProfiles);
+  webServer.on("/api/mqtt/profile", HTTP_POST, saveMqttProfile);
+  webServer.on("/api/mqtt/activate", HTTP_POST, activateMqttProfile);
+  webServer.on("/api/mqtt/delete", HTTP_POST, deleteMqttProfile);
   webServer.on("/api/wifi/scan", HTTP_GET, sendScan);
   webServer.on("/api/wifi/connect", HTTP_POST, connectToNewWifi);
   webServer.on("/api/wifi/configure", HTTP_POST, requestConfigMode);

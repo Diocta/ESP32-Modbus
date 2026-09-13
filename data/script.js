@@ -32,6 +32,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const pumpSwitch = document.getElementById("pumpSwitch");
   const pumpStatusText = document.getElementById("pumpStatusText");
   const pumpIcon = document.getElementById("pumpIcon");
+  const mqttChip = document.getElementById("mqttChip");
+  const mqttDot = document.getElementById("mqttDot");
+  const mqttText = document.getElementById("mqttText");
+  const profileList = document.getElementById("profileList");
+  const profileEmpty = document.getElementById("profileEmpty");
+  const mqttLimitHint = document.getElementById("mqttLimitHint");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalSubmitButton = document.getElementById("modalSubmitBtn");
+  let editingProfileId = -1;
   let configurationOnly = false;
 
   const setTheme = (theme) => {
@@ -136,6 +145,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const updateMqttStatus = (connected, profileName = "", error = "") => {
+    mqttChip?.classList.toggle("is-on", connected);
+    mqttDot?.classList.toggle("is-on", connected);
+    if (mqttText)
+      mqttText.textContent = connected
+        ? profileName || "Tersambung"
+        : "Not connected";
+    if (mqttText)
+      mqttText.title = connected ? profileName : error || "Belum tersambung";
+  };
+
   const refreshWifiStatus = async () => {
     try {
       const response = await fetch("/api/status", { cache: "no-store" });
@@ -156,6 +176,11 @@ document.addEventListener("DOMContentLoaded", () => {
         pumpStatusText.textContent = status.pump ? "Nyala" : "Mati";
         pumpIcon.classList.toggle("is-off", !status.pump);
       }
+      updateMqttStatus(
+        status.mqttConnected,
+        status.mqttProfile,
+        status.mqttError,
+      );
       configurationOnly = Boolean(status.configMode);
       updateWifiStatus(status.connected, status.connected ? status.ssid : "");
       if (wifiConnectedPanel) wifiConnectedPanel.hidden = configurationOnly;
@@ -201,6 +226,127 @@ document.addEventListener("DOMContentLoaded", () => {
       refreshWifiStatus();
     } finally {
       pumpSwitch.disabled = false;
+    }
+  });
+
+  let profileErrors = {};
+  const profileError = (id) => profileErrors[id] || "";
+  const profileAction = (label, action, id, className) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `btn btn-sm ${className}`;
+    button.dataset.action = action;
+    button.dataset.id = id;
+    button.textContent = label;
+    return button;
+  };
+
+  const loadMqttProfiles = async () => {
+    if (!profileList) return;
+    try {
+      const response = await fetch("/api/mqtt/profiles", { cache: "no-store" });
+      const profiles = await response.json();
+      profileList.replaceChildren();
+      if (profileEmpty) profileEmpty.hidden = profiles.length > 0;
+      if (mqttLimitHint) mqttLimitHint.hidden = profiles.length < 5;
+      profiles.forEach((profile) => {
+        const card = document.createElement("article");
+        card.className = `profile-card${profile.active ? " is-active" : ""}`;
+        card.dataset.profile = JSON.stringify(profile);
+        const main = document.createElement("div");
+        main.className = "profile-main";
+        const row = document.createElement("div");
+        row.className = "profile-name-row";
+        const name = document.createElement("span");
+        name.className = "profile-name";
+        name.textContent = profile.name;
+        row.append(name);
+        if (profile.active) {
+          const badge = document.createElement("span");
+          badge.className = "badge";
+          badge.textContent = "Aktif";
+          row.append(badge);
+        }
+        const broker = document.createElement("div");
+        broker.className = "profile-broker";
+        broker.textContent = `${profile.broker}:${profile.port}${profile.tls ? " · TLS" : ""}`;
+        main.append(row, broker);
+        const actions = document.createElement("div");
+        actions.className = "profile-actions";
+        if (!profile.active)
+          actions.append(
+            profileAction("Aktifkan", "activate", profile.id, "btn-primary"),
+          );
+        actions.append(profileAction("Edit", "edit", profile.id, "btn-ghost"));
+        actions.append(
+          profileAction("Hapus", "delete", profile.id, "btn-danger-ghost"),
+        );
+        card.append(main, actions);
+        if (profileError(profile.id)) {
+          const error = document.createElement("p");
+          error.className = "profile-error";
+          error.textContent = profileError(profile.id);
+          card.append(error);
+        }
+        profileList.append(card);
+      });
+    } catch {
+      if (profileEmpty) profileEmpty.hidden = false;
+    }
+  };
+
+  profileList?.addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
+    const card = button.closest("[data-profile]");
+    const profile = card ? JSON.parse(card.dataset.profile) : null;
+    const id = Number(button.dataset.id);
+    if (button.dataset.action === "edit" && profile) {
+      editingProfileId = id;
+      modalTitle.textContent = "Edit profil MQTT";
+      modalSubmitButton.textContent = "Simpan perubahan";
+      document.getElementById("profName").value = profile.name;
+      document.getElementById("profBroker").value = profile.broker;
+      document.getElementById("profPort").value = profile.port;
+      document.getElementById("profTls").checked = profile.tls;
+      document.getElementById("profUser").value = profile.username || "";
+      document.getElementById("profPass").value = "";
+      modalScrim.hidden = false;
+      return;
+    }
+
+    if (button.dataset.action === "delete" && profile) {
+      deletingProfileId = id;
+      if (deleteModalMessage) {
+        deleteModalMessage.textContent = `Apakah Anda yakin ingin menghapus profil "${profile.name}"?`;
+      }
+      if (deleteModalScrim) deleteModalScrim.hidden = false;
+      return;
+    }
+
+    if (button.dataset.action === "activate") {
+      button.disabled = true;
+      button.classList.add("is-loading");
+      const originalText = button.textContent;
+      button.textContent = "Connecting...";
+      try {
+        const response = await fetch("/api/mqtt/activate", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ id: String(id) }),
+        });
+        const result = await response.json();
+        if (!result.ok) {
+          profileErrors[id] = result.error || "Broker tidak dapat dihubungkan.";
+        } else {
+          delete profileErrors[id];
+        }
+      } catch (err) {
+        profileErrors[id] = "Gagal menghubungi ESP32.";
+      } finally {
+        await loadMqttProfiles();
+        await refreshWifiStatus();
+      }
     }
   });
 
@@ -295,6 +441,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const cancelModalButton = document.getElementById("modalCancelBtn");
   const profileForm = document.getElementById("profileForm");
 
+  const deleteModalScrim = document.getElementById("deleteModalScrim");
+  const deleteModalCloseBtn = document.getElementById("deleteModalCloseBtn");
+  const deleteModalCancelBtn = document.getElementById("deleteModalCancelBtn");
+  const deleteModalConfirmBtn = document.getElementById(
+    "deleteModalConfirmBtn",
+  );
+  const deleteModalMessage = document.getElementById("deleteModalMessage");
+  let deletingProfileId = -1;
+
   if (
     !modalScrim ||
     !addProfileButton ||
@@ -308,7 +463,16 @@ document.addEventListener("DOMContentLoaded", () => {
     modalScrim.hidden = true;
   };
 
+  const closeDeleteModal = () => {
+    if (deleteModalScrim) deleteModalScrim.hidden = true;
+    deletingProfileId = -1;
+  };
+
   addProfileButton.addEventListener("click", () => {
+    editingProfileId = -1;
+    modalTitle.textContent = "Tambah profil MQTT";
+    modalSubmitButton.textContent = "Tambah profil";
+    profileForm.reset();
     modalScrim.hidden = false;
   });
 
@@ -321,14 +485,84 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  profileForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    closeModal();
+  deleteModalCloseBtn?.addEventListener("click", closeDeleteModal);
+  deleteModalCancelBtn?.addEventListener("click", closeDeleteModal);
+  deleteModalScrim?.addEventListener("click", (event) => {
+    if (event.target === deleteModalScrim) {
+      closeDeleteModal();
+    }
   });
 
+  deleteModalConfirmBtn?.addEventListener("click", async () => {
+    if (deletingProfileId < 0) return;
+    deleteModalConfirmBtn.disabled = true;
+    deleteModalConfirmBtn.classList.add("is-loading");
+    try {
+      const response = await fetch("/api/mqtt/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ id: String(deletingProfileId) }),
+      });
+      const result = await response.json();
+      if (result.ok) {
+        delete profileErrors[deletingProfileId];
+      }
+    } catch {
+      // API error
+    } finally {
+      deleteModalConfirmBtn.disabled = false;
+      deleteModalConfirmBtn.classList.remove("is-loading");
+      closeDeleteModal();
+      await loadMqttProfiles();
+      await refreshWifiStatus();
+    }
+  });
+
+  profileForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (modalSubmitButton) {
+      modalSubmitButton.disabled = true;
+      modalSubmitButton.classList.add("is-loading");
+    }
+    const profile = {
+      id: String(editingProfileId),
+      name: document.getElementById("profName").value.trim(),
+      broker: document.getElementById("profBroker").value.trim(),
+      port: document.getElementById("profPort").value,
+      tls: String(document.getElementById("profTls").checked),
+      username: document.getElementById("profUser").value.trim(),
+      password: document.getElementById("profPass").value,
+    };
+    fetch("/api/mqtt/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(profile),
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!result.ok)
+          throw new Error(result.error || "Profil gagal disimpan");
+        closeModal();
+        await loadMqttProfiles();
+      })
+      .catch((error) => {
+        profileErrors[editingProfileId] = error.message;
+        loadMqttProfiles();
+      })
+      .finally(() => {
+        if (modalSubmitButton) {
+          modalSubmitButton.disabled = false;
+          modalSubmitButton.classList.remove("is-loading");
+        }
+      });
+  });
+
+  loadMqttProfiles();
+
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !modalScrim.hidden) {
-      closeModal();
+    if (event.key === "Escape") {
+      if (!modalScrim.hidden) closeModal();
+      if (deleteModalScrim && !deleteModalScrim.hidden) closeDeleteModal();
     }
   });
 });

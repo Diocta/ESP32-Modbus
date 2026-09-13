@@ -474,6 +474,23 @@
               <div class="profile-list" id="profileList">
                 <!-- Diisi oleh script.js -->
               </div>
+              <p class="mqtt-limit-hint" id="mqttLimitHint" hidden>
+                Maksimal 5 profil tersimpan pada perangkat. Hapus profil untuk
+                menambahkan profil baru.
+              </p>
+
+              <div class="mqtt-topics card">
+                <span class="readout-label">Topik standar perangkat</span>
+                <code>pompa/sensor/suhu</code>
+                <code>pompa/sensor/kelembapan</code>
+                <code>pompa/status</code>
+                <code>pompa/control</code>
+                <span class="field-hint"
+                  >Perintah kontrol menggunakan JSON:
+                  <code>{"state":"on"}</code> atau
+                  <code>{"state":"off"}</code>.</span
+                >
+              </div>
 
               <div class="empty-state" id="profileEmpty" hidden>
                 <svg width="34" height="34"><use href="#icon-mqtt" /></svg>
@@ -695,17 +712,6 @@
             </div>
           </div>
 
-          <div class="field">
-            <label for="profTopic"
-              >Topik <span class="optional">(opsional)</span></label
-            >
-            <input
-              type="text"
-              id="profTopic"
-              placeholder="Contoh: rumah/pompa/status"
-            />
-          </div>
-
           <div class="modal-actions">
             <button type="button" class="btn btn-ghost" id="modalCancelBtn">
               Batal
@@ -715,6 +721,44 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ============ MODAL: KONFIRMASI HAPUS PROFIL MQTT ============ -->
+    <div class="modal-scrim" id="deleteModalScrim" hidden>
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deleteModalTitle"
+      >
+        <div class="modal-head">
+          <h3 id="deleteModalTitle">Hapus profil MQTT</h3>
+          <button class="icon-btn" id="deleteModalCloseBtn" aria-label="Tutup">
+            <svg width="19" height="19"><use href="#icon-x" /></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteModalMessage">
+            Apakah Anda yakin ingin menghapus profil MQTT ini?
+          </p>
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              id="deleteModalCancelBtn"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              id="deleteModalConfirmBtn"
+            >
+              Hapus
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 

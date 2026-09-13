@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "relay_controller.h"
+#include "mqtt_manager.h"
 #include "sensor_reader.h"
 #include "wifi_config.h"
 
@@ -12,6 +13,7 @@ void setup() {
 
   sensor_init();
   relay_init();
+  mqtt_init();
 }
 
 void loop() {
@@ -23,5 +25,6 @@ void loop() {
   }
 
   sensor_update();
+  mqtt_update();
   delay(10);
 }
