@@ -193,15 +193,18 @@ String mqtt_last_error(void) { return lastError; }
 String mqtt_profiles_json(void) {
   String json = "[";
   bool first = true;
+  const bool connected = mqtt_is_connected();
   for (uint8_t index = 0; index < kMaxMqttProfiles; ++index) {
     if (!profileUsed[index]) continue;
     if (!first) json += ",";
     first = false;
+    const bool isProfileActive = connected && (activeIndex == index);
     json += "{\"id\":" + String(index) + ",\"name\":\"" + profiles[index].name +
             "\",\"broker\":\"" + profiles[index].broker +
             "\",\"port\":" + String(profiles[index].port) +
             ",\"tls\":" + String(profiles[index].tls ? "true" : "false") +
-             ",\"active\":" + String(activeIndex == index ? "true" : "false") + "}";
+            ",\"username\":\"" + profiles[index].username + "\"" +
+            ",\"active\":" + String(isProfileActive ? "true" : "false") + "}";
   }
   json += "]";
   return json;

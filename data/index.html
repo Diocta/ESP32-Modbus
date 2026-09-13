@@ -553,11 +553,7 @@
                 </button>
               </div>
 
-              <p class="wifi-config-hint" id="wifiConfigHint" hidden>
-                ESP32 akan restart dan membuat WiFi <strong>ESP32-S3</strong>.
-                Sambungkan perangkat ke WiFi tersebut. Jika halaman tidak
-                terbuka otomatis, buka <code>http://192.168.4.1</code>.
-              </p>
+              <p class="wifi-config-hint" id="wifiConfigHint" hidden></p>
 
               <form class="page-panel-body" id="wifiForm" hidden>
                 <div class="field">
@@ -757,6 +753,52 @@
             >
               Hapus
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ MODAL: KONFIRMASI GANTI WIFI ============ -->
+    <div class="modal-scrim" id="wifiModalScrim" hidden>
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wifiModalTitle"
+      >
+        <div class="modal-head">
+          <h3 id="wifiModalTitle">Konfirmasi Ganti WiFi</h3>
+          <button class="icon-btn" id="wifiModalCloseBtn" aria-label="Tutup">
+            <svg width="19" height="19"><use href="#icon-x" /></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="wifiModalConfirmBody">
+            <p>Apakah Anda yakin ingin mengganti jaringan WiFi?</p>
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="btn btn-ghost"
+                id="wifiModalCancelBtn"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                id="wifiModalConfirmBtn"
+              >
+                Ya, Ganti
+              </button>
+            </div>
+          </div>
+          <div id="wifiModalLoadingBody" hidden>
+            <p>
+              ESP32 sedang restart ke mode konfigurasi. Sambungkan perangkat ke
+              WiFi <strong>ESP32-S3</strong> (Password:
+              <code>esp32pompa</code>). Jika halaman tidak terbuka otomatis,
+              buka <code>http://192.168.4.1</code>.
+            </p>
           </div>
         </div>
       </div>

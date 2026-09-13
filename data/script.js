@@ -181,6 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
         status.mqttProfile,
         status.mqttError,
       );
+      await loadMqttProfiles();
       configurationOnly = Boolean(status.configMode);
       updateWifiStatus(status.connected, status.connected ? status.ssid : "");
       if (wifiConnectedPanel) wifiConnectedPanel.hidden = configurationOnly;
@@ -362,18 +363,53 @@ document.addEventListener("DOMContentLoaded", () => {
     icon?.setAttribute("href", isPassword ? "#icon-eye-off" : "#icon-eye");
   });
 
-  changeWifiButton?.addEventListener("click", async () => {
-    changeWifiButton.disabled = true;
-    if (wifiConfigHint) {
-      wifiConfigHint.hidden = false;
-      wifiConfigHint.textContent =
-        "ESP32 sedang restart ke mode konfigurasi. Tunggu WiFi ESP32-S3 muncul, lalu sambungkan perangkat ke sana.";
-    }
-    try {
-      await fetch("/api/wifi/configure", { method: "POST" });
-    } catch {
-      // Koneksi terputus adalah normal karena ESP32 sedang restart.
-    }
+  changeWifiButton?.addEventListener("click", () => {
+    const wifiModalScrim = document.getElementById("wifiModalScrim");
+    const wifiModalConfirmBody = document.getElementById(
+      "wifiModalConfirmBody",
+    );
+    const wifiModalLoadingBody = document.getElementById(
+      "wifiModalLoadingBody",
+    );
+    const wifiModalCloseBtn = document.getElementById("wifiModalCloseBtn");
+    const wifiModalCancelBtn = document.getElementById("wifiModalCancelBtn");
+    const wifiModalConfirmBtn = document.getElementById("wifiModalConfirmBtn");
+
+    if (!wifiModalScrim) return;
+
+    if (wifiModalConfirmBody) wifiModalConfirmBody.hidden = false;
+    if (wifiModalLoadingBody) wifiModalLoadingBody.hidden = true;
+    wifiModalScrim.hidden = false;
+
+    const closeWifiModal = () => {
+      wifiModalScrim.hidden = true;
+    };
+
+    wifiModalCloseBtn?.addEventListener("click", closeWifiModal, {
+      once: true,
+    });
+    wifiModalCancelBtn?.addEventListener("click", closeWifiModal, {
+      once: true,
+    });
+
+    wifiModalConfirmBtn?.addEventListener(
+      "click",
+      async () => {
+        if (wifiModalConfirmBtn.disabled) return;
+        wifiModalConfirmBtn.disabled = true;
+        wifiModalConfirmBtn.classList.add("is-loading");
+
+        if (wifiModalConfirmBody) wifiModalConfirmBody.hidden = true;
+        if (wifiModalLoadingBody) wifiModalLoadingBody.hidden = false;
+
+        try {
+          await fetch("/api/wifi/configure", { method: "POST" });
+        } catch {
+          // Normal jika koneksi terputus karena ESP32 restart
+        }
+      },
+      { once: true },
+    );
   });
 
   scanWifiButton?.addEventListener("click", async () => {

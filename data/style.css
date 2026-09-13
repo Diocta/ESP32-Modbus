@@ -60,6 +60,7 @@
 html,
 body {
   height: 100%;
+  overflow-x: hidden;
 }
 body {
   margin: 0;
@@ -233,6 +234,11 @@ button {
   font-size: 1.05rem;
   font-weight: 650;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 .topbar-status {
   display: flex;
@@ -588,6 +594,7 @@ body[data-layout="single"] .view.is-active {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  margin-top: 0.5rem;
 }
 .profile-card {
   background: var(--surface);
@@ -1042,6 +1049,10 @@ input:focus {
     width: 100%;
     justify-content: center;
   }
+  [data-view="mqtt"] .view-inner,
+  [data-view="modbus"] .view-inner {
+    margin: 2.25rem auto;
+  }
   .view--page {
     align-items: stretch;
   }
@@ -1076,15 +1087,20 @@ input:focus {
   .hamburger {
     display: flex;
   }
+  .topbar-status {
+    gap: 0.35rem;
+    max-width: calc(100% - 48px);
+  }
   .status-text {
     display: none;
   }
-  .topbar-status .status-chip:first-child .status-text {
+  .topbar-status .status-chip .status-text {
     display: block;
-    max-width: 86px;
+    max-width: 65px;
   }
   .status-chip {
-    padding: 0.45rem;
+    padding: 0.35rem 0.55rem;
+    font-size: 0.75rem;
   }
 
   body[data-layout="single"] .view {
