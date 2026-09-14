@@ -72,7 +72,9 @@ void sendStatus() {
                 ",\"mqttConnected\":" +
                 String(mqtt_is_connected() ? "true" : "false") +
                 ",\"mqttProfile\":\"" + jsonEscape(mqtt_active_profile_name()) +
-                  "\",\"mqttError\":\"" + jsonEscape(mqtt_last_error()) + "\"}";
+                  "\",\"mqttError\":\"" + jsonEscape(mqtt_last_error()) +
+                  "\",\"deviceId\":" + String(sensor_get_device_id()) +
+                  ",\"relayChannel\":" + String(relay_get_channel()) + "}";
   webServer.send(200, "application/json", json);
 }
 
@@ -125,6 +127,24 @@ void deleteMqttProfile() {
   const int index = webServer.arg("id").toInt();
   const bool deleted = index >= 0 && index < kMaxMqttProfiles && mqtt_delete_profile(index);
   webServer.send(200, "application/json", String("{\"ok\":") + (deleted ? "true}" : "false}"));
+}
+
+void setDeviceId() {
+  const int id = webServer.arg("id").toInt();
+  if (id < kSensorDeviceIdMin || id > kSensorDeviceIdMax || !sensor_set_device_id((uint8_t)id)) {
+    webServer.send(400, "application/json", "{\"ok\":false,\"error\":\"Device ID harus 1-3\"}");
+    return;
+  }
+  webServer.send(200, "application/json", "{\"ok\":true}");
+}
+
+void setRelayChannel() {
+  const int channel = webServer.arg("channel").toInt();
+  if (channel < kRelayChannelMin || channel > kRelayChannelMax || !relay_set_channel((uint8_t)channel)) {
+    webServer.send(400, "application/json", "{\"ok\":false,\"error\":\"Channel relay harus 1-3\"}");
+    return;
+  }
+  webServer.send(200, "application/json", "{\"ok\":true}");
 }
 
 void sendScan() {
@@ -204,6 +224,8 @@ void registerRoutes() {
   webServer.on("/api/mqtt/profile", HTTP_POST, saveMqttProfile);
   webServer.on("/api/mqtt/activate", HTTP_POST, activateMqttProfile);
   webServer.on("/api/mqtt/delete", HTTP_POST, deleteMqttProfile);
+  webServer.on("/api/modbus/device", HTTP_POST, setDeviceId);
+  webServer.on("/api/relay/channel", HTTP_POST, setRelayChannel);
   webServer.on("/api/wifi/scan", HTTP_GET, sendScan);
   webServer.on("/api/wifi/connect", HTTP_POST, connectToNewWifi);
   webServer.on("/api/wifi/configure", HTTP_POST, requestConfigMode);

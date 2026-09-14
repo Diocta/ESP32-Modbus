@@ -326,7 +326,7 @@
           </a>
           <a href="#modbus" class="nav-link" data-target="modbus">
             <svg width="19" height="19"><use href="#icon-sliders" /></svg
-            ><span>Modbus &amp; Pin</span>
+            ><span>Konfigurasi Perangkat</span>
           </a>
           <a href="#wifi" class="nav-link" data-target="wifi">
             <svg width="19" height="19"><use href="#icon-wifi" /></svg
@@ -444,12 +444,27 @@
                 </button>
               </div>
 
-              <div class="card info-card">
-                <p>
-                  Nilai suhu, kelembapan, dan status pompa di atas masih berupa
-                  <strong>data dari ESP32</strong>. Sensor diperbarui berkala
-                  dan kontrol pompa terhubung ke relay channel 1.
-                </p>
+              <div class="summary-indicators">
+                <div
+                  class="status-chip status-chip--block"
+                  id="deviceIdSummaryChip"
+                >
+                  <span class="status-dot" id="deviceIdSummaryDot"></span>
+                  <svg width="15" height="15"><use href="#icon-sliders" /></svg>
+                  <span class="status-text" id="deviceIdSummaryText"
+                    >Device ID: --</span
+                  >
+                </div>
+                <div
+                  class="status-chip status-chip--block"
+                  id="relayChannelSummaryChip"
+                >
+                  <span class="status-dot" id="relayChannelSummaryDot"></span>
+                  <svg width="15" height="15"><use href="#icon-power" /></svg>
+                  <span class="status-text" id="relayChannelSummaryText"
+                    >Relay Channel: --</span
+                  >
+                </div>
               </div>
             </div>
           </section>
@@ -503,25 +518,100 @@
             </div>
           </section>
 
-          <!-- ================= MODBUS / PIN CONFIG ================= -->
+          <!-- ================= DEVICE CONFIG (MODBUS ID & RELAY CHANNEL) ================= -->
           <section class="view" id="modbus" data-view="modbus">
             <div class="view-inner">
               <div class="section-head">
                 <div>
-                  <h2>Modbus &amp; Konfigurasi Pin</h2>
+                  <h2>Konfigurasi Perangkat</h2>
                   <p class="section-sub">
-                    Pengaturan alamat Modbus dan pin sensor perangkat.
+                    Atur ID perangkat sensor Modbus dan channel relay yang
+                    digunakan untuk kontrol pompa.
                   </p>
                 </div>
               </div>
 
-              <div class="empty-state empty-state--placeholder">
-                <svg width="34" height="34"><use href="#icon-sliders" /></svg>
-                <p>Halaman ini belum tersedia.</p>
-                <span
-                  >Pengaturan alamat Modbus dan pin sensor akan ditambahkan pada
-                  tahap pengembangan berikutnya.</span
+              <div class="card device-card">
+                <div class="device-card-head">
+                  <div class="readout-icon device-icon">
+                    <svg width="22" height="22">
+                      <use href="#icon-sliders" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span class="readout-label"
+                      >ID Perangkat Sensor (Modbus)</span
+                    >
+                    <p class="field-hint">
+                      Samakan dengan address yang di-set pada sensor fisik
+                      (SW1). Ganti hanya jika sensor tidak terbaca pada ID saat
+                      ini.
+                    </p>
+                  </div>
+                </div>
+                <div class="option-group" id="deviceIdOptions">
+                  <button type="button" class="option-btn" data-value="1">
+                    1
+                  </button>
+                  <button type="button" class="option-btn" data-value="2">
+                    2
+                  </button>
+                  <button type="button" class="option-btn" data-value="3">
+                    3
+                  </button>
+                </div>
+                <div class="device-status" id="deviceIdStatus">
+                  <span class="status-dot" id="deviceIdDot"></span>
+                  <span id="deviceIdStatusText">Memeriksa status sensor…</span>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-primary btn-block"
+                  id="deviceIdSaveBtn"
+                  disabled
                 >
+                  Simpan ID Perangkat
+                </button>
+              </div>
+
+              <div class="card device-card">
+                <div class="device-card-head">
+                  <div class="readout-icon device-icon">
+                    <svg width="22" height="22"><use href="#icon-power" /></svg>
+                  </div>
+                  <div>
+                    <span class="readout-label">Channel Relay Pompa</span>
+                    <p class="field-hint">
+                      Pilih channel relay yang mengontrol pompa. Sesuaikan
+                      wiring relay secara manual ke channel yang dipilih.
+                    </p>
+                  </div>
+                </div>
+                <div class="option-group" id="relayChannelOptions">
+                  <button type="button" class="option-btn" data-value="1">
+                    1
+                  </button>
+                  <button type="button" class="option-btn" data-value="2">
+                    2
+                  </button>
+                  <button type="button" class="option-btn" data-value="3">
+                    3
+                  </button>
+                </div>
+                <div class="device-status" id="relayChannelStatus">
+                  <span class="status-dot" id="relayChannelDot"></span>
+                  <span id="relayChannelStatusText"
+                    >Memeriksa status relay…</span
+                  >
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-primary btn-block"
+                  id="relayChannelSaveBtn"
+                  disabled
+                >
+                  Simpan Channel Relay
+                </button>
               </div>
             </div>
           </section>

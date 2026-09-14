@@ -40,8 +40,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const mqttLimitHint = document.getElementById("mqttLimitHint");
   const modalTitle = document.getElementById("modalTitle");
   const modalSubmitButton = document.getElementById("modalSubmitBtn");
+  const deviceIdOptions = document.getElementById("deviceIdOptions");
+  const deviceIdSaveBtn = document.getElementById("deviceIdSaveBtn");
+  const deviceIdDot = document.getElementById("deviceIdDot");
+  const deviceIdStatusText = document.getElementById("deviceIdStatusText");
+  const deviceIdSummaryDot = document.getElementById("deviceIdSummaryDot");
+  const deviceIdSummaryText = document.getElementById("deviceIdSummaryText");
+  const relayChannelOptions = document.getElementById("relayChannelOptions");
+  const relayChannelSaveBtn = document.getElementById("relayChannelSaveBtn");
+  const relayChannelDot = document.getElementById("relayChannelDot");
+  const relayChannelStatusText = document.getElementById(
+    "relayChannelStatusText",
+  );
+  const relayChannelSummaryDot = document.getElementById(
+    "relayChannelSummaryDot",
+  );
+  const relayChannelSummaryText = document.getElementById(
+    "relayChannelSummaryText",
+  );
   let editingProfileId = -1;
   let configurationOnly = false;
+  let currentDeviceId = 1;
+  let pendingDeviceId = null;
+  let currentRelayChannel = 1;
+  let pendingRelayChannel = null;
 
   const setTheme = (theme) => {
     document.documentElement.dataset.theme = theme;
@@ -95,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
         target === "mqtt"
           ? "Profil MQTT"
           : target === "modbus"
-            ? "Modbus & Pin"
+            ? "Konfigurasi Perangkat"
             : target === "wifi"
               ? "Konfigurasi WiFi"
               : "Dashboard";
@@ -156,6 +178,117 @@ document.addEventListener("DOMContentLoaded", () => {
       mqttText.title = connected ? profileName : error || "Belum tersambung";
   };
 
+  const renderOptionGroup = (group, selectedValue) => {
+    group?.querySelectorAll(".option-btn").forEach((button) => {
+      button.classList.toggle(
+        "is-selected",
+        Number(button.dataset.value) === Number(selectedValue),
+      );
+    });
+  };
+
+  const updateDeviceIdUi = (sensorValid) => {
+    renderOptionGroup(deviceIdOptions, pendingDeviceId ?? currentDeviceId);
+    if (deviceIdStatusText)
+      deviceIdStatusText.textContent = sensorValid
+        ? `Sensor tersambung pada ID ${currentDeviceId}`
+        : `Sensor tidak terbaca pada ID ${currentDeviceId}`;
+    deviceIdDot?.classList.toggle("is-on", Boolean(sensorValid));
+    if (deviceIdSummaryText)
+      deviceIdSummaryText.textContent = `Device ID: ${currentDeviceId}`;
+    deviceIdSummaryDot?.classList.toggle("is-on", Boolean(sensorValid));
+    if (deviceIdSaveBtn)
+      deviceIdSaveBtn.disabled =
+        pendingDeviceId === null || pendingDeviceId === currentDeviceId;
+  };
+
+  const updateRelayChannelUi = () => {
+    renderOptionGroup(
+      relayChannelOptions,
+      pendingRelayChannel ?? currentRelayChannel,
+    );
+    if (relayChannelStatusText)
+      relayChannelStatusText.textContent = `Relay aktif pada channel ${currentRelayChannel}`;
+    relayChannelDot?.classList.add("is-on");
+    if (relayChannelSummaryText)
+      relayChannelSummaryText.textContent = `Relay Channel: ${currentRelayChannel}`;
+    relayChannelSummaryDot?.classList.add("is-on");
+    if (relayChannelSaveBtn)
+      relayChannelSaveBtn.disabled =
+        pendingRelayChannel === null ||
+        pendingRelayChannel === currentRelayChannel;
+  };
+
+  deviceIdOptions?.querySelectorAll(".option-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      pendingDeviceId = Number(button.dataset.value);
+      renderOptionGroup(deviceIdOptions, pendingDeviceId);
+      if (deviceIdSaveBtn)
+        deviceIdSaveBtn.disabled = pendingDeviceId === currentDeviceId;
+    });
+  });
+
+  relayChannelOptions?.querySelectorAll(".option-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      pendingRelayChannel = Number(button.dataset.value);
+      renderOptionGroup(relayChannelOptions, pendingRelayChannel);
+      if (relayChannelSaveBtn)
+        relayChannelSaveBtn.disabled =
+          pendingRelayChannel === currentRelayChannel;
+    });
+  });
+
+  deviceIdSaveBtn?.addEventListener("click", async () => {
+    if (pendingDeviceId === null) return;
+    deviceIdSaveBtn.disabled = true;
+    deviceIdSaveBtn.classList.add("is-loading");
+    try {
+      const response = await fetch("/api/modbus/device", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ id: String(pendingDeviceId) }),
+      });
+      const result = await response.json();
+      if (!result.ok)
+        throw new Error(result.error || "Gagal menyimpan Device ID");
+      currentDeviceId = pendingDeviceId;
+      pendingDeviceId = null;
+      if (deviceIdStatusText)
+        deviceIdStatusText.textContent = "Memeriksa status sensor…";
+      await refreshWifiStatus();
+    } catch (error) {
+      if (deviceIdStatusText) deviceIdStatusText.textContent = error.message;
+    } finally {
+      deviceIdSaveBtn.classList.remove("is-loading");
+      updateDeviceIdUi(deviceIdDot?.classList.contains("is-on"));
+    }
+  });
+
+  relayChannelSaveBtn?.addEventListener("click", async () => {
+    if (pendingRelayChannel === null) return;
+    relayChannelSaveBtn.disabled = true;
+    relayChannelSaveBtn.classList.add("is-loading");
+    try {
+      const response = await fetch("/api/relay/channel", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ channel: String(pendingRelayChannel) }),
+      });
+      const result = await response.json();
+      if (!result.ok)
+        throw new Error(result.error || "Gagal menyimpan channel relay");
+      currentRelayChannel = pendingRelayChannel;
+      pendingRelayChannel = null;
+      await refreshWifiStatus();
+    } catch (error) {
+      if (relayChannelStatusText)
+        relayChannelStatusText.textContent = error.message;
+    } finally {
+      relayChannelSaveBtn.classList.remove("is-loading");
+      updateRelayChannelUi();
+    }
+  });
+
   const refreshWifiStatus = async () => {
     try {
       const response = await fetch("/api/status", { cache: "no-store" });
@@ -181,6 +314,14 @@ document.addEventListener("DOMContentLoaded", () => {
         status.mqttProfile,
         status.mqttError,
       );
+      if (typeof status.deviceId === "number") {
+        currentDeviceId = status.deviceId;
+        updateDeviceIdUi(status.sensorValid);
+      }
+      if (typeof status.relayChannel === "number") {
+        currentRelayChannel = status.relayChannel;
+        updateRelayChannelUi();
+      }
       await loadMqttProfiles();
       configurationOnly = Boolean(status.configMode);
       updateWifiStatus(status.connected, status.connected ? status.ssid : "");
@@ -206,6 +347,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (wifiForm) wifiForm.hidden = true;
       if (wifiConfigHint) wifiConfigHint.hidden = true;
       updateWifiStatus(false);
+      updateDeviceIdUi(false);
+      deviceIdSummaryDot?.classList.remove("is-on");
+      relayChannelSummaryDot?.classList.remove("is-on");
     }
   };
 

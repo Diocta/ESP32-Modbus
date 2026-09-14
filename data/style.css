@@ -462,6 +462,75 @@ body[data-layout="single"] .view.is-active {
   font-size: 0.8em;
 }
 
+/* ---- Dashboard: device/relay indicators ---- */
+.summary-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.status-chip--block {
+  flex: 1 1 200px;
+  justify-content: flex-start;
+  padding: 0.65rem 0.85rem;
+}
+.status-chip--block .status-text {
+  max-width: none;
+}
+
+/* ---- Device config cards (device ID & relay channel) ---- */
+.device-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.device-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+.device-icon {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.option-group {
+  display: flex;
+  gap: 0.5rem;
+}
+.option-btn {
+  flex: 1;
+  padding: 0.55rem 0;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-weight: 650;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.option-btn:hover {
+  background: var(--surface-hover);
+}
+.option-btn.is-selected {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+.device-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 9px;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
 /* ---- Switch ---- */
 .switch {
   width: 52px;
@@ -1097,6 +1166,10 @@ input:focus {
   .topbar-status .status-chip .status-text {
     display: block;
     max-width: 65px;
+  }
+  .status-chip--block .status-text {
+    display: block;
+    max-width: none;
   }
   .status-chip {
     padding: 0.35rem 0.55rem;
