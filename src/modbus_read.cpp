@@ -19,10 +19,8 @@ void setup() {
 void loop() {
   wifi_handle_client();
 
-  // Pastikan WiFi tetap connected
-  if (WiFi.status() != WL_CONNECTED) {
-    wifi_init();
-  }
+  // WiFi.setAutoReconnect(true) menangani reconnect di background;
+  // tidak perlu panggil wifi_init() ulang (blocking) di sini.
 
   sensor_update();
   mqtt_update();

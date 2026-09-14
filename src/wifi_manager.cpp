@@ -13,6 +13,11 @@ constexpr char kConfigPassword[] = "esp32pompa";
 constexpr char kMdnsName[] = "aqua";
 constexpr char kConfigRequestKey[] = "cfg_req";
 constexpr byte kDnsPort = 53;
+// Tombol BOOT (GPIO0) ditahan LOW terus-menerus selama kBootHoldMs -> paksa mode konfigurasi.
+// Dibaca langsung selagi firmware berjalan (bukan saat proses reset/boot), jadi tidak terpengaruh
+// oleh perilaku strapping pin atau reset-reason yang berbeda-beda antar board.
+constexpr uint8_t kBootButtonPin = 0;
+constexpr uint32_t kBootHoldMs = 5000;
 
 WebServer webServer(80);
 DNSServer dnsServer;
@@ -20,6 +25,10 @@ bool configPortalActive = false;
 bool accessPointActive = false;
 bool webServerStarted = false;
 unsigned long lastWifiLog = 0;
+unsigned long bootHoldStart = 0;
+bool bootHoldTriggered = false;
+unsigned long lastBootHoldLogSec = 0;
+bool wasConnected = false;
 char saved_ssid[33] = "";
 char saved_password[65] = "";
 
@@ -168,6 +177,16 @@ void saveCredentials(const String& ssid, const String& password) {
   preferences.end();
 }
 
+void requestConfigModeInternal(void) {
+  Preferences preferences;
+  preferences.begin("aqualab", false);
+  preferences.putBool(kConfigRequestKey, true);
+  preferences.end();
+  Serial.println("[WiFi] Mode konfigurasi diminta, ESP32 akan restart");
+  delay(300);
+  ESP.restart();
+}
+
 void requestConfigMode() {
   Preferences preferences;
   preferences.begin("aqualab", false);
@@ -203,12 +222,16 @@ void connectToNewWifi() {
     return;
   }
 
+  const String ip = WiFi.localIP().toString();
+
   saveCredentials(ssid, password);
   strncpy(saved_ssid, ssid.c_str(), sizeof(saved_ssid) - 1);
   saved_ssid[sizeof(saved_ssid) - 1] = '\0';
   strncpy(saved_password, password.c_str(), sizeof(saved_password) - 1);
   saved_password[sizeof(saved_password) - 1] = '\0';
-  webServer.send(200, "application/json", "{\"ok\":true,\"restarting\":true}");
+
+  webServer.send(200, "application/json",
+                 "{\"ok\":true,\"restarting\":true,\"ip\":\"" + ip + "\"}");
   delay(800);
   ESP.restart();
 }
@@ -276,6 +299,8 @@ const char* wifi_get_saved_password(void) { return saved_password; }
 void wifi_init(void) {
   if (configPortalActive) return;
 
+  pinMode(kBootButtonPin, INPUT_PULLUP);
+
   Preferences preferences;
   preferences.begin("aqualab", true);
   const bool configRequested = preferences.getBool(kConfigRequestKey, false);
@@ -291,33 +316,77 @@ void wifi_init(void) {
     return;
   }
 
-  if (!storedSsid.isEmpty()) {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(storedSsid.c_str(), storedPassword.c_str());
-    const unsigned long deadline = millis() + 20000;
-    while (WiFi.status() != WL_CONNECTED && millis() < deadline) delay(100);
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    configPortalActive = false;
-    strncpy(saved_ssid, WiFi.SSID().c_str(), sizeof(saved_ssid) - 1);
-    saved_ssid[sizeof(saved_ssid) - 1] = '\0';
-    WiFi.setHostname(kMdnsName);
-    WiFi.setAutoReconnect(true);
-    Serial.printf("[WiFi] Terhubung ke %s\n", WiFi.SSID().c_str());
-    Serial.printf("[WiFi] IP: %s\n", WiFi.localIP().toString().c_str());
-    MDNS.begin(kMdnsName);
-    startAccessPoint(false);
-    startWebServer();
+  if (storedSsid.isEmpty()) {
+    // Belum pernah disetting sama sekali -> langsung buka mode konfigurasi.
+    startConfigPortal();
     return;
   }
 
-  startConfigPortal();
+  WiFi.mode(WIFI_STA);
+  WiFi.setHostname(kMdnsName);
+  WiFi.setAutoReconnect(true);
+  WiFi.begin(storedSsid.c_str(), storedPassword.c_str());
+  const unsigned long deadline = millis() + 20000;
+  while (WiFi.status() != WL_CONNECTED && millis() < deadline) delay(100);
+
+  strncpy(saved_ssid, storedSsid.c_str(), sizeof(saved_ssid) - 1);
+  saved_ssid[sizeof(saved_ssid) - 1] = '\0';
+
+  // Tidak lagi jatuh ke mode AP otomatis kalau gagal connect sekali di sini.
+  // WiFi.setAutoReconnect(true) terus mencoba di background tanpa memblokir
+  // loop(), supaya web server & tombol BOOT tetap responsif. Kalau memang
+  // perlu mode konfigurasi, pakai tombol "Ganti WiFi" atau tahan BOOT 5 detik.
+  if (WiFi.status() == WL_CONNECTED) {
+    wasConnected = true;
+    Serial.printf("[WiFi] Terhubung ke %s\n", WiFi.SSID().c_str());
+    Serial.printf("[WiFi] IP: %s\n", WiFi.localIP().toString().c_str());
+    MDNS.begin(kMdnsName);
+  } else {
+    Serial.println("[WiFi] Belum terhubung, mencoba lagi di background. Tahan BOOT 5 detik untuk mode konfigurasi.");
+  }
+  startWebServer();
 }
 
 void wifi_handle_client(void) {
   if (accessPointActive) dnsServer.processNextRequest();
   if (webServerStarted) webServer.handleClient();
+
+  const bool nowConnected = WiFi.status() == WL_CONNECTED;
+  if (nowConnected && !wasConnected) {
+    strncpy(saved_ssid, WiFi.SSID().c_str(), sizeof(saved_ssid) - 1);
+    saved_ssid[sizeof(saved_ssid) - 1] = '\0';
+    Serial.printf("[WiFi] Tersambung kembali ke %s | IP: %s\n", WiFi.SSID().c_str(),
+                  WiFi.localIP().toString().c_str());
+    MDNS.begin(kMdnsName);
+  }
+  wasConnected = nowConnected;
+
+  // Tombol BOOT tetap jadi jalan darurat selama belum benar-benar berada
+  // di mode konfigurasi dengan AP yang aktif (mis. kalau AP gagal start).
+  if (!configPortalActive || !accessPointActive) {
+    if (digitalRead(kBootButtonPin) == LOW) {
+      if (bootHoldStart == 0) {
+        bootHoldStart = millis();
+        Serial.println("[WiFi] Tombol BOOT ditekan, tahan 5 detik untuk mode konfigurasi...");
+      } else if (!bootHoldTriggered) {
+        const unsigned long heldMs = millis() - bootHoldStart;
+        if (heldMs / 1000 != lastBootHoldLogSec) {
+          lastBootHoldLogSec = heldMs / 1000;
+          Serial.printf("[WiFi] BOOT ditahan: %lus...\n", lastBootHoldLogSec);
+        }
+        if (heldMs >= kBootHoldMs) {
+          bootHoldTriggered = true;
+          Serial.println("[WiFi] Tombol BOOT ditahan 5 detik -> mode konfigurasi dipaksa");
+          requestConfigModeInternal();
+        }
+      }
+    } else {
+      bootHoldStart = 0;
+      bootHoldTriggered = false;
+      lastBootHoldLogSec = 0;
+    }
+  }
+
   if (millis() - lastWifiLog >= 10000) {
     lastWifiLog = millis();
     if (WiFi.status() == WL_CONNECTED) {

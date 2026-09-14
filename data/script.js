@@ -603,8 +603,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await response.json();
       if (!result.ok) throw new Error(result.error || "Koneksi gagal");
       if (wifiCurrentText)
-        wifiCurrentText.textContent = "Berhasil. ESP32 sedang restart...";
-      setTimeout(() => window.location.reload(), 3000);
+        wifiCurrentText.textContent = result.ip
+          ? `Berhasil! Catat IP ini: ${result.ip}. Halaman akan reload otomatis dalam 12 detik...`
+          : "Berhasil. ESP32 sedang restart...";
+      setTimeout(() => window.location.reload(), 12000);
     } catch (error) {
       if (wifiCurrentText)
         wifiCurrentText.textContent = error.message || "Koneksi WiFi gagal.";
