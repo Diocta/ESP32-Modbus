@@ -3,7 +3,7 @@
 #include <Preferences.h>
 
 namespace {
-constexpr uint8_t kChannelPins[3] = {1, 2, 41};  // CH1, CH2, CH3
+constexpr uint8_t kChannelPins[6] = {1, 2, 41, 42, 45, 46};  // CH1-CH6
 uint8_t channel = 1;
 bool enabled = false;
 

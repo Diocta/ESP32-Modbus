@@ -11,7 +11,7 @@ struct SensorReading {
 };
 
 constexpr uint8_t kSensorDeviceIdMin = 1;
-constexpr uint8_t kSensorDeviceIdMax = 3;
+constexpr uint8_t kSensorDeviceIdMax = 31;
 
 void sensor_init(void);
 void sensor_update(void);

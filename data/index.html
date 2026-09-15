@@ -326,11 +326,11 @@
           </a>
           <a href="#modbus" class="nav-link" data-target="modbus">
             <svg width="19" height="19"><use href="#icon-sliders" /></svg
-            ><span>Konfigurasi Perangkat</span>
+            ><span>Device Configuration</span>
           </a>
           <a href="#wifi" class="nav-link" data-target="wifi">
             <svg width="19" height="19"><use href="#icon-wifi" /></svg
-            ><span>Konfigurasi WiFi</span>
+            ><span>WiFi Configuration</span>
           </a>
         </nav>
         <div class="nav-footer">
@@ -506,15 +506,6 @@
                   <code>{"state":"off"}</code>.</span
                 >
               </div>
-
-              <div class="empty-state" id="profileEmpty" hidden>
-                <svg width="34" height="34"><use href="#icon-mqtt" /></svg>
-                <p>Belum ada profil MQTT.</p>
-                <span
-                  >Tambahkan profil pertama untuk menyambungkan perangkat ke
-                  broker.</span
-                >
-              </div>
             </div>
           </section>
 
@@ -523,7 +514,7 @@
             <div class="view-inner">
               <div class="section-head">
                 <div>
-                  <h2>Konfigurasi Perangkat</h2>
+                  <h2>Device Configuration</h2>
                   <p class="section-sub">
                     Atur ID perangkat sensor Modbus dan channel relay yang
                     digunakan untuk kontrol pompa.
@@ -549,15 +540,31 @@
                     </p>
                   </div>
                 </div>
-                <div class="option-group" id="deviceIdOptions">
-                  <button type="button" class="option-btn" data-value="1">
-                    1
+                <div class="stepper" id="deviceIdStepper">
+                  <button
+                    type="button"
+                    class="stepper-btn"
+                    id="deviceIdDecBtn"
+                    aria-label="Kurangi"
+                  >
+                    <svg width="20" height="20">
+                      <use href="#icon-chevron-left" />
+                    </svg>
                   </button>
-                  <button type="button" class="option-btn" data-value="2">
-                    2
-                  </button>
-                  <button type="button" class="option-btn" data-value="3">
-                    3
+                  <span class="stepper-value" id="deviceIdValue">1</span>
+                  <button
+                    type="button"
+                    class="stepper-btn"
+                    id="deviceIdIncBtn"
+                    aria-label="Tambah"
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      style="transform: rotate(180deg)"
+                    >
+                      <use href="#icon-chevron-left" />
+                    </svg>
                   </button>
                 </div>
                 <div class="device-status" id="deviceIdStatus">
@@ -587,15 +594,31 @@
                     </p>
                   </div>
                 </div>
-                <div class="option-group" id="relayChannelOptions">
-                  <button type="button" class="option-btn" data-value="1">
-                    1
+                <div class="stepper" id="relayChannelStepper">
+                  <button
+                    type="button"
+                    class="stepper-btn"
+                    id="relayChannelDecBtn"
+                    aria-label="Kurangi"
+                  >
+                    <svg width="20" height="20">
+                      <use href="#icon-chevron-left" />
+                    </svg>
                   </button>
-                  <button type="button" class="option-btn" data-value="2">
-                    2
-                  </button>
-                  <button type="button" class="option-btn" data-value="3">
-                    3
+                  <span class="stepper-value" id="relayChannelValue">1</span>
+                  <button
+                    type="button"
+                    class="stepper-btn"
+                    id="relayChannelIncBtn"
+                    aria-label="Tambah"
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      style="transform: rotate(180deg)"
+                    >
+                      <use href="#icon-chevron-left" />
+                    </svg>
                   </button>
                 </div>
                 <div class="device-status" id="relayChannelStatus">
@@ -629,7 +652,7 @@
                     <use href="#icon-chevron-left" />
                   </svg>
                 </button>
-                <h2>Konfigurasi WiFi</h2>
+                <h2>Wifi Configuration</h2>
               </div>
 
               <div class="wifi-connected-panel" id="wifiConnectedPanel" hidden>

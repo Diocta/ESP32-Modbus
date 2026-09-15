@@ -519,6 +519,46 @@ body[data-layout="single"] .view.is-active {
   border-color: var(--accent);
   color: var(--accent-strong);
 }
+
+/* ---- Stepper ---- */
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+.stepper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.stepper-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.stepper-value {
+  flex: 1;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 650;
+  color: var(--text);
+  font-family:
+    "SFMono-Regular", ui-monospace, Consolas, "Liberation Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
 .device-status {
   display: flex;
   align-items: center;

@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 constexpr uint8_t kRelayChannelMin = 1;
-constexpr uint8_t kRelayChannelMax = 3;
+constexpr uint8_t kRelayChannelMax = 6;
 
 void relay_init(void);
 bool relay_set(bool enabled);

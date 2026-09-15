@@ -36,17 +36,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const mqttDot = document.getElementById("mqttDot");
   const mqttText = document.getElementById("mqttText");
   const profileList = document.getElementById("profileList");
-  const profileEmpty = document.getElementById("profileEmpty");
   const mqttLimitHint = document.getElementById("mqttLimitHint");
   const modalTitle = document.getElementById("modalTitle");
   const modalSubmitButton = document.getElementById("modalSubmitBtn");
-  const deviceIdOptions = document.getElementById("deviceIdOptions");
+  const deviceIdDecBtn = document.getElementById("deviceIdDecBtn");
+  const deviceIdValue = document.getElementById("deviceIdValue");
+  const deviceIdIncBtn = document.getElementById("deviceIdIncBtn");
   const deviceIdSaveBtn = document.getElementById("deviceIdSaveBtn");
   const deviceIdDot = document.getElementById("deviceIdDot");
   const deviceIdStatusText = document.getElementById("deviceIdStatusText");
   const deviceIdSummaryDot = document.getElementById("deviceIdSummaryDot");
   const deviceIdSummaryText = document.getElementById("deviceIdSummaryText");
-  const relayChannelOptions = document.getElementById("relayChannelOptions");
+  const relayChannelDecBtn = document.getElementById("relayChannelDecBtn");
+  const relayChannelValue = document.getElementById("relayChannelValue");
+  const relayChannelIncBtn = document.getElementById("relayChannelIncBtn");
   const relayChannelSaveBtn = document.getElementById("relayChannelSaveBtn");
   const relayChannelDot = document.getElementById("relayChannelDot");
   const relayChannelStatusText = document.getElementById(
@@ -117,9 +120,9 @@ document.addEventListener("DOMContentLoaded", () => {
         target === "mqtt"
           ? "Profil MQTT"
           : target === "modbus"
-            ? "Konfigurasi Perangkat"
+            ? "Device Configuration"
             : target === "wifi"
-              ? "Konfigurasi WiFi"
+              ? "WiFi Configuration"
               : "Dashboard";
     }
 
@@ -178,17 +181,13 @@ document.addEventListener("DOMContentLoaded", () => {
       mqttText.title = connected ? profileName : error || "Belum tersambung";
   };
 
-  const renderOptionGroup = (group, selectedValue) => {
-    group?.querySelectorAll(".option-btn").forEach((button) => {
-      button.classList.toggle(
-        "is-selected",
-        Number(button.dataset.value) === Number(selectedValue),
-      );
-    });
+  const updateStepper = (valueEl, decBtn, incBtn, value, min, max) => {
+    if (valueEl) valueEl.textContent = value;
   };
 
   const updateDeviceIdUi = (sensorValid) => {
-    renderOptionGroup(deviceIdOptions, pendingDeviceId ?? currentDeviceId);
+    const val = pendingDeviceId ?? currentDeviceId;
+    updateStepper(deviceIdValue, deviceIdDecBtn, deviceIdIncBtn, val, 1, 31);
     if (deviceIdStatusText)
       deviceIdStatusText.textContent = sensorValid
         ? `Sensor tersambung pada ID ${currentDeviceId}`
@@ -203,9 +202,14 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const updateRelayChannelUi = () => {
-    renderOptionGroup(
-      relayChannelOptions,
-      pendingRelayChannel ?? currentRelayChannel,
+    const val = pendingRelayChannel ?? currentRelayChannel;
+    updateStepper(
+      relayChannelValue,
+      relayChannelDecBtn,
+      relayChannelIncBtn,
+      val,
+      1,
+      6,
     );
     if (relayChannelStatusText)
       relayChannelStatusText.textContent = `Relay aktif pada channel ${currentRelayChannel}`;
@@ -219,23 +223,28 @@ document.addEventListener("DOMContentLoaded", () => {
         pendingRelayChannel === currentRelayChannel;
   };
 
-  deviceIdOptions?.querySelectorAll(".option-btn").forEach((button) => {
-    button.addEventListener("click", () => {
-      pendingDeviceId = Number(button.dataset.value);
-      renderOptionGroup(deviceIdOptions, pendingDeviceId);
-      if (deviceIdSaveBtn)
-        deviceIdSaveBtn.disabled = pendingDeviceId === currentDeviceId;
-    });
+  deviceIdDecBtn?.addEventListener("click", () => {
+    const val = pendingDeviceId ?? currentDeviceId;
+    pendingDeviceId = val > 1 ? val - 1 : 31;
+    updateDeviceIdUi(deviceIdDot?.classList.contains("is-on"));
   });
 
-  relayChannelOptions?.querySelectorAll(".option-btn").forEach((button) => {
-    button.addEventListener("click", () => {
-      pendingRelayChannel = Number(button.dataset.value);
-      renderOptionGroup(relayChannelOptions, pendingRelayChannel);
-      if (relayChannelSaveBtn)
-        relayChannelSaveBtn.disabled =
-          pendingRelayChannel === currentRelayChannel;
-    });
+  deviceIdIncBtn?.addEventListener("click", () => {
+    const val = pendingDeviceId ?? currentDeviceId;
+    pendingDeviceId = val < 31 ? val + 1 : 1;
+    updateDeviceIdUi(deviceIdDot?.classList.contains("is-on"));
+  });
+
+  relayChannelDecBtn?.addEventListener("click", () => {
+    const val = pendingRelayChannel ?? currentRelayChannel;
+    pendingRelayChannel = val > 1 ? val - 1 : 6;
+    updateRelayChannelUi();
+  });
+
+  relayChannelIncBtn?.addEventListener("click", () => {
+    const val = pendingRelayChannel ?? currentRelayChannel;
+    pendingRelayChannel = val < 6 ? val + 1 : 1;
+    updateRelayChannelUi();
   });
 
   deviceIdSaveBtn?.addEventListener("click", async () => {
@@ -392,7 +401,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/api/mqtt/profiles", { cache: "no-store" });
       const profiles = await response.json();
       profileList.replaceChildren();
-      if (profileEmpty) profileEmpty.hidden = profiles.length > 0;
       if (mqttLimitHint) mqttLimitHint.hidden = profiles.length < 5;
       profiles.forEach((profile) => {
         const card = document.createElement("article");
@@ -604,9 +612,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!result.ok) throw new Error(result.error || "Koneksi gagal");
       if (wifiCurrentText)
         wifiCurrentText.textContent = result.ip
-          ? `Berhasil! Catat IP ini: ${result.ip}. Halaman akan reload otomatis dalam 12 detik...`
+          ? `Berhasil! Catat IP ini: ${result.ip}. Halaman akan reload otomatis`
           : "Berhasil. ESP32 sedang restart...";
-      setTimeout(() => window.location.reload(), 12000);
+      setTimeout(() => window.location.reload(), 15000);
     } catch (error) {
       if (wifiCurrentText)
         wifiCurrentText.textContent = error.message || "Koneksi WiFi gagal.";
