@@ -99,10 +99,12 @@ void publishData(void) {
                   ",\"humidity\":" +
                   (sensor.valid ? String(sensor.humidity, 2) : "null") +
                   ",\"pump\":\"" + String(relay_is_enabled() ? "on" : "off") + "\"}";
-  activeMqtt->publish("pompa/status", payload.c_str(), true);
+  activeMqtt->publish("pompa/status", payload.c_str(), false);
   if (sensor.valid) {
-    activeMqtt->publish("pompa/sensor/suhu", String(sensor.temperature, 2).c_str(), true);
-    activeMqtt->publish("pompa/sensor/kelembapan", String(sensor.humidity, 2).c_str(), true);
+    String tempPayload = "{\"temperature\":" + String(sensor.temperature, 2) + "}";
+    String humPayload = "{\"humidity\":" + String(sensor.humidity, 2) + "}";
+    activeMqtt->publish("pompa/sensor/suhu", tempPayload.c_str(), false);
+    activeMqtt->publish("pompa/sensor/kelembapan", humPayload.c_str(), false);
   }
 }
 }  // namespace
@@ -112,7 +114,7 @@ void mqtt_init(void) { loadProfiles(); }
 void mqtt_update(void) {
   if (activeMqtt && activeMqtt->connected()) {
     activeMqtt->loop();
-    if (millis() - lastPublish >= 10000) {
+    if (millis() - lastPublish >= 5000) {
       lastPublish = millis();
       publishData();
     }
