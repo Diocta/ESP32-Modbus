@@ -61,6 +61,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const relayChannelSummaryText = document.getElementById(
     "relayChannelSummaryText",
   );
+
+  const navLogoutBtn = document.getElementById("navLogoutBtn");
+  const logoutModalScrim = document.getElementById("logoutModalScrim");
+  const logoutModalCloseBtn = document.getElementById("logoutModalCloseBtn");
+  const logoutModalCancelBtn = document.getElementById("logoutModalCancelBtn");
+  const logoutModalConfirmBtn = document.getElementById("logoutModalConfirmBtn");
+  
+  const loginOverlay = document.getElementById("loginOverlay");
+  const loginForm = document.getElementById("loginForm");
+  const loginUser = document.getElementById("loginUser");
+  const loginPass = document.getElementById("loginPass");
+  const toggleLoginPass = document.getElementById("toggleLoginPass");
+  const loginError = document.getElementById("loginError");
+
+  let isAuthenticated = localStorage.getItem("aquactrl-auth") === "1";
+  let hasCheckedStatus = false;
+
   let editingProfileId = -1;
   let configurationOnly = false;
   let currentDeviceId = 1;
@@ -303,6 +320,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/api/status", { cache: "no-store" });
       if (!response.ok) throw new Error("Status WiFi tidak tersedia");
       const status = await response.json();
+      
+      if (!hasCheckedStatus) {
+        hasCheckedStatus = true;
+        if (status.configMode) {
+          isAuthenticated = true; // Langsung masuk tanpa login jika configMode
+        }
+        if (!isAuthenticated) {
+          loginOverlay.hidden = false;
+        }
+      }
+
       if (tempValue) tempValue.textContent = status.temperature ?? "--";
       if (humValue) humValue.textContent = status.humidity ?? "--";
       if (tempMeta)
@@ -745,6 +773,61 @@ document.addEventListener("DOMContentLoaded", () => {
           modalSubmitButton.classList.remove("is-loading");
         }
       });
+  });
+
+  loginForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (loginUser.value === "admin" && loginPass.value === "00000000") {
+      localStorage.setItem("aquactrl-auth", "1");
+      isAuthenticated = true;
+      loginOverlay.hidden = true;
+      loginError.hidden = true;
+    } else {
+      loginError.hidden = false;
+    }
+  });
+
+  toggleLoginPass?.addEventListener("click", () => {
+    const isPass = loginPass.type === "password";
+    loginPass.type = isPass ? "text" : "password";
+    toggleLoginPass.innerHTML = isPass ? '<svg width="17" height="17"><use href="#icon-eye-off" /></svg>' : '<svg width="17" height="17"><use href="#icon-eye" /></svg>';
+  });
+
+  navLogoutBtn?.addEventListener("click", () => {
+    logoutModalScrim.hidden = false;
+    closeNavigation();
+  });
+
+  logoutModalCloseBtn?.addEventListener("click", () => logoutModalScrim.hidden = true);
+  logoutModalCancelBtn?.addEventListener("click", () => logoutModalScrim.hidden = true);
+
+  logoutModalScrim?.addEventListener("click", (e) => {
+    if (e.target === logoutModalScrim) {
+      logoutModalScrim.hidden = true;
+    }
+  });
+
+  logoutModalConfirmBtn?.addEventListener("click", () => {
+    localStorage.removeItem("aquactrl-auth");
+    isAuthenticated = false;
+    logoutModalScrim.hidden = true;
+    loginOverlay.hidden = false;
+    loginUser.value = "";
+    loginPass.value = "";
+    loginError.hidden = true;
+    history.replaceState(null, "", "#dashboard");
+    showView("dashboard");
+  });
+
+  window.addEventListener("storage", (e) => {
+    if (e.key === "aquactrl-auth") {
+      isAuthenticated = e.newValue === "1";
+      if (!isAuthenticated && hasCheckedStatus) {
+        loginOverlay.hidden = false;
+      } else if (isAuthenticated) {
+        loginOverlay.hidden = true;
+      }
+    }
   });
 
   loadMqttProfiles();

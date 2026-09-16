@@ -1261,3 +1261,94 @@ input:focus {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------------------------------------------------
+   Login Overlay
+   --------------------------------------------------------- */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.login-overlay[hidden] {
+  display: none !important;
+}
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  box-shadow: var(--shadow-modal);
+  animation: modal-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.login-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+.login-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.login-header p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+#loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.login-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  text-align: center;
+  background: var(--danger-soft);
+  padding: 0.5rem;
+  border-radius: 8px;
+  margin-top: -0.5rem;
+}
+.text-danger {
+  color: var(--danger) !important;
+}
+.logout-btn {
+  margin-top: auto;
+  margin-bottom: 1rem;
+  border: 1px dashed var(--danger-soft);
+  border-radius: 9px;
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: transparent;
+  width: calc(100% - 1.2rem);
+  margin-left: 0.6rem;
+  margin-right: 0.6rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.logout-btn:hover {
+  background: var(--danger-soft);
+}
+.logout-btn span {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
